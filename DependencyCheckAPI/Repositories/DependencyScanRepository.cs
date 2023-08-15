@@ -12,13 +12,15 @@ namespace DependencyCheckAPI.Repositories
         public async Task UnzipFolder(string filename)
         {
             string foldername = filename.Replace(".zip", "");
-            string sourcePath = Path.Combine("C:\\Users\\josse\\source\\repos\\test", filename);
-            string destinationPath = Path.Combine("C:\\Users\\josse\\source\\repos\\test", foldername);
+            string sourcePath = filename;
+            string destinationPath = foldername;
             try
                 {
-                    await Task.Run(() => ZipFile.ExtractToDirectory(sourcePath, destinationPath));
-                    await ExecuteDependencyScan(foldername, "JSON");
-                    await ExecuteDependencyScan(foldername, "HTML");
+                Console.WriteLine("Unzipping");
+                await Task.Run(() => ZipFile.ExtractToDirectory(sourcePath, destinationPath));
+                Console.WriteLine("extracted to directory");
+                await ExecuteDependencyScan(foldername, "JSON");
+                await ExecuteDependencyScan(foldername, "HTML");
                 }
             catch (IOException ex) when (ex.Message.Contains("already exists"))
             {
@@ -36,31 +38,35 @@ namespace DependencyCheckAPI.Repositories
 
         public async Task ExecuteDependencyScan(string foldername, string outputFormat)
         {
-            string projectPath = Path.Combine("C:\\Users\\josse\\source\\repos\\test", foldername);
-            string outputPath = projectPath;
-            string dependencyCheckPath = "C:\\Users\\josse\\Downloads\\dependency-check-8.3.1-release\\dependency-check\\bin\\dependency-check.bat";
-
-            if (Directory.Exists(projectPath))
+            try
             {
-                await Task.Run(() =>
+                string projectPath = foldername;
+                string outputPath = projectPath;
+                string dependencyCheckPath = "/app/dependency-check/dependency-check/bin/dependency-check.sh";
+                Console.WriteLine(dependencyCheckPath);
+
+                if (Directory.Exists(projectPath))
                 {
-                    ProcessStartInfo startInfo = new ProcessStartInfo
+                    await Task.Run(() =>
                     {
-                        UseShellExecute = false,
-                        FileName = dependencyCheckPath,
-                        Arguments = $"--project \"testproject\" -s \"{projectPath}\" -f \"{outputFormat}\" -o \"{outputPath}\"",
-                        Verb = "runas"
-                    };
+                        ProcessStartInfo startInfo = new ProcessStartInfo
+                        {
+                            UseShellExecute = false,
+                            FileName = dependencyCheckPath,
+                            Arguments = $"--project \"testproject\" -s \"{projectPath}\" -f \"{outputFormat}\" -o \"{outputPath}\"",
+                            Verb = "runas"
+                        };
 
-                    using (Process process = Process.Start(startInfo))
-                    {
-                        process.WaitForExit();
-                    }
-                });
+                        using (Process process = Process.Start(startInfo))
+                        {
+                            process.WaitForExit();
+                        }
+                    });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                throw new DirectoryNotFoundException($"Directory '{projectPath}' not found.");
+                throw new Exception($"Error extracting zip file: {ex.Message}");
             }
         }
     }

@@ -23,7 +23,7 @@ namespace DependencyCheckAPI.DAL
         public async Task<BlobDto> DownloadAsyncInstantDownload(string blobFilename,string userId)
         {
             BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-            string destinationFilePath = @"C:\Users\josse\source\repos\test\" + blobFilename;
+            string destinationFilePath = blobFilename;
             try
             {
                 // Get a reference to the blob uploaded earlier from the API in the container from configuration settings
@@ -59,7 +59,7 @@ namespace DependencyCheckAPI.DAL
         public async Task<BlobDto> UploadHtmlFileToBlobAsync(string blobFileName, string userId)
         {
             string foldername = blobFileName.Replace(".zip", "");
-            string htmlFilePath = @"C:\\Users\\josse\\source\\repos\\test\\"+foldername+"\\dependency-check-report.html";
+            string htmlFilePath = foldername + @"/dependency-check-report.html";
             //string htmlFilePath = @"C:\Users\josse\source\repos\"+foldername+"\\dependency-check-report.html";
             BlobContainerClient containerClient = new BlobContainerClient(_storageConnectionString, _storageContainerName);
             string destinationBlobPath = userId+"\\"+foldername+"\\dependency-check-report.html"; // The name of the blob in the container

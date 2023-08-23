@@ -16,7 +16,7 @@ RUN mkdir /dependency-check \
 
 
 COPY ["DependencyCheckAPI.csproj", "DependencyCheckAPI/"]
-RUN dotnet restore "DependencyCheckAPI.csproj"
+RUN dotnet restore "DependencyCheckAPI/DependencyCheckAPI.csproj"
 COPY . .
 
 WORKDIR "/src/DependencyCheckAPI"

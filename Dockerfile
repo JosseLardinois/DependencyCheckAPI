@@ -15,7 +15,7 @@ RUN mkdir /dependency-check \
     && unzip /dependency-check/dependency-check.zip -d /dependency-check
 
 
-COPY ["DependencyCheckAPI.csproj", "DependencyCheckAPI/"]
+COPY ["DependencyCheckAPI/DependencyCheckAPI.csproj", "DependencyCheckAPI/"]
 RUN dotnet restore "DependencyCheckAPI/DependencyCheckAPI.csproj"
 COPY . .
 

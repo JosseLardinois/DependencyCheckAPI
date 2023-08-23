@@ -44,10 +44,6 @@ stages:
       inputs:
         packageType: 'sdk'
         version: '6.0.x'  # Replace with the actual .NET 6.0 version
-    
-    - script: nuget restore '**/*.sln'
-      displayName: 'Restore NuGet Packages'  # Add this step to restore NuGet packages
-    
     - task: NuGetToolInstaller@1
 
     - task: NuGetCommand@2

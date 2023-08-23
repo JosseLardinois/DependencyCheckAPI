@@ -8,7 +8,7 @@ variables:
   dockerRegistryServiceConnection: '58dd4450-eb19-4b8e-94e8-ad4089283faf'
   imageRepository: 'josselardinoisdependencycheckapi'
   containerRegistry: 'codecheckregistry.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/DependencyCheckAPI/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
   buildConfiguration: 'Release'

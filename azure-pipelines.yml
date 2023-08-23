@@ -11,15 +11,13 @@ variables:
   dockerfilePath: '$(Build.SourcesDirectory)/DependencyCheckAPI/Dockerfile'
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
 stages:
-- stage: BuildDockerImage
+- stage: BuildAndPushDockerImage
   displayName: Build and push Docker image
   jobs:
-  - job: BuildDockerImage
+  - job: BuildAndPushDockerImage
     displayName: Build and push Docker image
     pool:
       vmImage: $(vmImageName)
@@ -28,34 +26,39 @@ stages:
       displayName: Build and push an image to container registry
       inputs:
         command: buildAndPush
+        containerRegistry: $(dockerRegistryServiceConnection)
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
 
 - stage: BuildDotNetApp
-  displayName: Build and test ASP.NET Core projects
+  displayName: Build and test .NET 6.0 Web API
   jobs:
   - job: BuildDotNetApp
-    displayName: Build and test ASP.NET Core projects
+    displayName: Build and test .NET 6.0 Web API
     pool:
       vmImage: 'windows-latest'
     steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '6.0.x'  # Replace with the actual .NET 6.0 version
+
     - task: NuGetToolInstaller@1
 
     - task: NuGetCommand@2
       inputs:
         restoreSolution: '$(solution)'
 
-    - task: VSBuild@1
+    - task: DotNetCoreCLI@2
       inputs:
-        solution: '$(solution)'
-        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration)'
 
-    - task: VSTest@2
+    - task: DotNetCoreCLI@2
       inputs:
-        platform: '$(buildPlatform)'
-        configuration: '$(buildConfiguration)'
+        command: 'test'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration)'

@@ -43,7 +43,7 @@ namespace DependencyCheckAPI.Controllers
             }
         }
 
-
+        /*
         [HttpGet("DependencyCheck")]
         public async Task<IActionResult> DependencyCheck(string filename, string userId)
         {
@@ -84,6 +84,6 @@ namespace DependencyCheckAPI.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, $"An error occurred: {ex.Message}");
             }
         }
-
+        */
     }
 }

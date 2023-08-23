@@ -21,13 +21,7 @@ builder.Services.AddSingleton<ISQLResultsStorage, SQLResultsStorage>();
 builder.Services.AddSingleton<ISQLResultsRepository, SQLResultsRepository>();
 builder.Services.AddHostedService<Worker>();
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseHttpsRedirection();
 

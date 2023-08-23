@@ -9,8 +9,9 @@ public class SQLResultsStorage : ISQLResultsStorage
 
     public SQLResultsStorage(IConfiguration configuration, ILogger<SQLResultsStorage> logger)
     {
-        _DBconnectionString = configuration.GetValue<string>("DBConnectionString");
-        _logger = logger;
+            _DBconnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+            _logger = logger;
+
     }
 
     public void InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
@@ -40,14 +41,14 @@ public class SQLResultsStorage : ISQLResultsStorage
 
     public List<DependencyCheckResultsDTO> RetrieveDependencyCheckResults(string projectId, string userId)
     {
+        if (!DoesProjectExist(userId, projectId))
+        {
+            _logger.LogInformation("Project does not exist.");
+            return null;
+        }
+
         try
         {
-            if (!DoesProjectExist(userId, projectId))
-            {
-                _logger.LogInformation("Project does not exist.");
-                return null;
-            }
-
             List<DependencyCheckResultsDTO> resultDtos = FetchResultsFromDatabase(projectId);
             return resultDtos;
         }
@@ -57,6 +58,7 @@ public class SQLResultsStorage : ISQLResultsStorage
             throw;
         }
     }
+
 
     public bool CheckAndInsertIfNotExistsInProjects(string userId, string projectId)
     {
@@ -115,7 +117,7 @@ public class SQLResultsStorage : ISQLResultsStorage
         }
         catch (Exception ex)
         {
-            HandleError(ex, "An error occurred while checking if project exists.");
+            HandleError(ex, "No existing project for user:" + userId + "with project:"+ projectId);
             throw;
         }
     }

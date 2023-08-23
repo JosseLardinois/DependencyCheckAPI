@@ -12,11 +12,11 @@ namespace DependencyCheckAPI.DAL
         private readonly string _storageContainerName;
         private readonly ILogger<AzureBlobStorage> _logger;
 
-        public AzureBlobStorage(IConfiguration configuration, ILogger<AzureBlobStorage> logger)
+        public AzureBlobStorage(ILogger<AzureBlobStorage> logger)
         {
-            _storageConnectionString = configuration.GetValue<string>("BlobConnectionString");
-            _storageContainerName = configuration.GetValue<string>("BlobContainerName");
-            _logger = logger;
+                _storageConnectionString = Environment.GetEnvironmentVariable("BlobConnectionString");
+                _storageContainerName = Environment.GetEnvironmentVariable("BlobContainerName");
+                _logger = logger;
         }
 
 

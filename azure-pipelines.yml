@@ -43,22 +43,22 @@ stages:
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: '6.0.x'  # Replace with the actual .NET 6.0 version
-
+        version: '6.0'  # Replace with the actual .NET 6.0 version
+    
     - task: NuGetToolInstaller@1
 
     - task: NuGetCommand@2
       inputs:
-        restoreSolution: '$(solution)'
+        restoreSolution: '**/*.sln'  # Adjust the pattern based on your solution file location
 
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
-        projects: '$(solution)'
+        projects: '**/*.csproj'  # Adjust the pattern based on your project file location
         arguments: '--configuration $(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
       inputs:
         command: 'test'
-        projects: '$(solution)'
+        projects: '**/*.csproj'  # Adjust the pattern based on your project file location
         arguments: '--configuration $(buildConfiguration)'

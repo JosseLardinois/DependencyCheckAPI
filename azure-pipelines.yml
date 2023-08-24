@@ -64,6 +64,15 @@ stages:
         command: 'test'
         projects: '**/*.csproj'
         testRunTitle: 'test'
+  
+- stage: DeployToAzure
+  displayName: Deploy to Azure Container Apps
+  jobs:
+  - job: DeployToAzureContainer
+    displayName: Deploy to Azure Container Apps
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
     - task: AzureContainerApps@1
       inputs:
         appSourcePath: '$(Build.SourcesDirectory)/src'

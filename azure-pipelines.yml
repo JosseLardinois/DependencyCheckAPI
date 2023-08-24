@@ -23,6 +23,7 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
+
       displayName: Build and push an image to container registry
       inputs:
         command: buildAndPush
@@ -63,3 +64,10 @@ stages:
         command: 'test'
         projects: '**/*.csproj'
         testRunTitle: 'test'
+    - task: AzureContainerApps@1
+      inputs:
+        appSourcePath: '$(Build.SourcesDirectory)/src'
+        azureSubscription: 'Azure for Students(1965b804-bfa4-4d48-9278-f789305ae2d3)'
+        acrName: 'josselardinoisdependencycheckapi'
+        containerAppName: 'dependencycheckapp'
+        resourceGroup: 'DefaultResourceGroup-WEU'

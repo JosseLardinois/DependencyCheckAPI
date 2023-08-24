@@ -52,15 +52,15 @@ stages:
         restoreSolution: '**/*.sln'
         feedsToUse: 'select'
 
-        
+
+    
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
-        projects: '**/*.csproj'  # Adjust the pattern based on your project file location
-        arguments: '--configuration $(buildConfiguration)'
-
+        projects: '**/*.csproj'
+        
     - task: DotNetCoreCLI@2
       inputs:
         command: 'test'
-        projects: '**/*.csproj'  # Adjust the pattern based on your project file location
-        arguments: '--configuration $(buildConfiguration)'
+        projects: '**/*.csproj'
+        testRunTitle: 'test'

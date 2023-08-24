@@ -45,7 +45,7 @@ stages:
         packageType: 'sdk'
         version: '6.0.x'  # Replace with the actual .NET 6.0 version
 
-    - script: nuget restore '**/*.csproj'
+    - script: 'nuget restore **/*.csproj'
       displayName: 'Restore NuGet Packages'  # Add this step to restore NuGet packages
       
 

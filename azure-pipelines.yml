@@ -44,17 +44,13 @@ stages:
       inputs:
         packageType: 'sdk'
         version: '6.0.x'  # Replace with the actual .NET 6.0 version
-
-    - script: 'nuget restore **/*.csproj'
-      displayName: 'Restore NuGet Packages'  # Add this step to restore NuGet packages
-      
-
-    - task: NuGetToolInstaller@1
-
     - task: NuGetCommand@2
       inputs:
-        restoreSolution: '**/*.sln'  # Adjust the pattern based on your solution file location
-
+        command: 'restore'
+        restoreSolution: '**/*.sln'
+        feedsToUse: 'select'
+    - task: NuGetToolInstaller@1
+        
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'

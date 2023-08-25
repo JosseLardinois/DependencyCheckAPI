@@ -24,7 +24,7 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - script: |
-        ls $(Build.SourcesDirectory)/src  # List contents of the app source directory
+        cat $(Build.SourcesDirectory)/Dockerfile  # List contents of the app source directory
         ls $(Build.SourcesDirectory)  # List contents of the repository root directory
       displayName: Verify Source Contents  # Debugging step
     - task: AzureContainerApps@1

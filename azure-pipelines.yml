@@ -31,7 +31,7 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         tags: |
-          'latest'
+          latest
         
 
 - stage: BuildDotNetApp

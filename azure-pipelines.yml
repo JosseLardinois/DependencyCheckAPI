@@ -14,59 +14,7 @@ variables:
   buildConfiguration: 'Release'
 
 stages:
-- stage: BuildAndPushDockerImage
-  displayName: Build and push Docker image
-  jobs:
-  - job: BuildAndPushDockerImage
-    displayName: Build and push Docker image
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
 
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(dockerRegistryServiceConnection)
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        tags: |
-          latest
-        
-
-- stage: BuildDotNetApp
-  displayName: Build and test .NET 6.0 Web API
-  jobs:
-  - job: BuildDotNetApp
-    displayName: Build and test .NET 6.0 Web API
-    pool:
-      vmImage: 'windows-latest'
-    steps:
-    - task: UseDotNet@2
-      inputs:
-        packageType: 'sdk'
-        version: '6.0.x'  # Replace with the actual .NET 6.0 version
-
-    - task: NuGetToolInstaller@1
-    - task: NuGetCommand@2
-      inputs:
-        command: 'restore'
-        restoreSolution: '**/*.sln'
-        feedsToUse: 'select'
-
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'build'
-        projects: '**/*.csproj'
-
-        
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'test'
-        projects: '**/*.csproj'
-        testRunTitle: 'test'
-    
-  
   
 - stage: DeployToAzure
   displayName: Deploy to Azure Container Apps
@@ -89,12 +37,10 @@ stages:
         acrName: 'codecheckregistry'
         acrPassword: 'b0VPgwG5TRAvFjgSxNME6pSsUD46gGzCWA3p13IHC0+ACRCwdlpy'
         imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
-        containerAppEnvironment: managedEnvironment-DefaultResource-9242
+        imageToBuild: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
+        containerAppEnvironment: 'managedEnvironment-DefaultResource-9242'
         containerAppName: 'dependencycheckapp'
         resourceGroup: 'DefaultResourceGroup-WEU'
         runtimeStack: 'mcr.microsoft.com/oryx/dotnetcore:6.0'
         targetPort: '80'
-        environmentVariables: |
-          BlobConnectionString=DefaultEndpointsProtocol=https;AccountName=azurefunctionjosse;AccountKey=1UxIKvjBV2Bjrf1E/R/7+zMDD9lB62VyL6iWEztw1Hp4hzPpl0AHab2DfYGNakadV1paGMCYBHUO+AStpEjiBA==;EndpointSuffix=core.windows.net
-          BlobContainerName=testcontainer
-          DBConnectionString=Server=tcp:eudbserverjosse.database.windows.net,1433;Initial Catalog=DependencyCheckDatabase;Persist Security Info=False;User ID=josseadmin;Password=Password123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=45;
+        environmentVariables: 'BlobConnectionString=DefaultEndpointsProtocol=https;AccountName=azurefunctionjosse;AccountKey=1UxIKvjBV2Bjrf1E/R/7+zMDD9lB62VyL6iWEztw1Hp4hzPpl0AHab2DfYGNakadV1paGMCYBHUO+AStpEjiBA==;EndpointSuffix=core.windows.net BlobContainerName=testcontainer DBConnectionString=Server=tcp:eudbserverjosse.database.windows.net,1433;Initial Catalog=DependencyCheckDatabase;Persist Security Info=False;User ID=josseadmin;Password=Password123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=45;'

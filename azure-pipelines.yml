@@ -89,7 +89,7 @@ stages:
         acrName: 'codecheckregistry'
         acrPassword: 'b0VPgwG5TRAvFjgSxNME6pSsUD46gGzCWA3p13IHC0+ACRCwdlpy'
         imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
-        containerAppEnvironment: managedEnvironment-DefaultResource-8649
+        containerAppEnvironment: managedEnvironment-DefaultResource-9242
         containerAppName: 'dependencycheckapp'
         resourceGroup: 'DefaultResourceGroup-WEU'
         runtimeStack: 'mcr.microsoft.com/oryx/dotnetcore:6.0'

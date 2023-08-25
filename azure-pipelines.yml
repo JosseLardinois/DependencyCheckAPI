@@ -31,7 +31,7 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         tags: |
-          $(tag)
+          'latest'
         
 
 - stage: BuildDotNetApp
@@ -86,7 +86,7 @@ stages:
         azureSubscription: 'Azure for Students(1965b804-bfa4-4d48-9278-f789305ae2d3)'
         acrName: 'codecheckregistry'
         acrPassword: 'b0VPgwG5TRAvFjgSxNME6pSsUD46gGzCWA3p13IHC0+ACRCwdlpy'
-        imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:60'
+        imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
         containerAppName: 'dependencycheckapp'
         resourceGroup: 'DefaultResourceGroup-WEU'
         runtimeStack: 'mcr.microsoft.com/oryx/dotnetcore:6.0'

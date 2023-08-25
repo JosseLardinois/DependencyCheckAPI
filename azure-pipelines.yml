@@ -65,6 +65,8 @@ stages:
         command: 'test'
         projects: '**/*.csproj'
         testRunTitle: 'test'
+    
+  
   
 - stage: DeployToAzure
   displayName: Deploy to Azure Container Apps
@@ -87,6 +89,7 @@ stages:
         acrName: 'codecheckregistry'
         acrPassword: 'b0VPgwG5TRAvFjgSxNME6pSsUD46gGzCWA3p13IHC0+ACRCwdlpy'
         imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
+        containerAppEnvironment: managedEnvironment-DefaultResource-991b
         containerAppName: 'dependencycheckapp'
         resourceGroup: 'DefaultResourceGroup-WEU'
         runtimeStack: 'mcr.microsoft.com/oryx/dotnetcore:6.0'

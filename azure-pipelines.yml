@@ -5,8 +5,7 @@ resources:
 - repo: self
 
 variables:
-  dockerRegistryServiceConnection: '58dd4450-eb19-4b8e-94e8-ad4089283faf'
-  imageRepository: 'josselardinoisdependencycheckapi'
+#variables are in azure pipeline
   containerRegistry: 'codecheckregistry.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
@@ -81,13 +80,13 @@ stages:
         appSourcePath: '$(Build.SourcesDirectory)'
         dockerfilePath: '/Dockerfile'
         azureSubscription: '$(azureSubscription)'
-        acrName: 'codecheckregistry'
+        acrName: '$(acrName)'
         acrPassword: '$(acrPassword)'
-        imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
-        imageToBuild: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
+        imageToDeploy: '$(image)'
+        imageToBuild: '$(image)'
         containerAppEnvironment: '$(containerAppEnvironment)'
         containerAppName: 'dependencycheckapp'
         resourceGroup: 'DefaultResourceGroup-WEU'
         runtimeStack: 'mcr.microsoft.com/oryx/dotnetcore:6.0'
-        targetPort: '80'
+        targetPort: '$(targetPort)'
         environmentVariables: '$(environmentVariables)'

@@ -22,7 +22,7 @@ namespace DependencyCheckAPI.Repositories
         public List<DependencyInfo> ExtractJson(string fileName)
         {
             string filename = Path.GetFileNameWithoutExtension(fileName);
-            string jsonFilePath = Path.Combine(filename, "/dependency-check-report.json");
+            string jsonFilePath = filename + "/dependency-check-report.json";
             string jsonContent = File.ReadAllText(jsonFilePath);
             JArray dependenciesArray = GetDependenciesArray(jsonContent);
 

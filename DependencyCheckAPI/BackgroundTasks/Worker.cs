@@ -23,9 +23,10 @@ namespace BackgroundTasks.Worker
             _azureRepository = azureRepository;
 
             // Replace these values with your actual Azure Service Bus connection string, topic name, and subscription name.
-            _serviceBusConnectionString = "Endpoint=sb://vulncheck.servicebus.windows.net/;SharedAccessKeyName=VulnCheckPolicy;SharedAccessKey=Tx1zP7NPbQfsaBUXYhiNB/GGjh4dYEyqc+ASbAwwyOU=;EntityPath=vulnchecktopic";
-            _topicName = "vulnchecktopic";
-            _subscriptionName = "TestSubscription";
+
+            _serviceBusConnectionString = Environment.GetEnvironmentVariable("ServiceBusConnection");
+            _topicName = Environment.GetEnvironmentVariable("TopicName");
+            _subscriptionName = Environment.GetEnvironmentVariable("SubscriptionName");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

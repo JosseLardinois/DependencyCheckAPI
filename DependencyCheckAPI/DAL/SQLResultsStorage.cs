@@ -25,6 +25,13 @@ public class SQLResultsStorage : ISQLResultsStorage
             evidenceCount = evidenceCount ?? 0;
             baseScore = baseScore ?? 0;
 
+            _logger.LogInformation("Package Info:");
+            _logger.LogInformation(projectId);
+            _logger.LogInformation(packageName);
+            _logger.LogInformation(highestSeverity);
+            _logger.LogInformation(cveCount.ToString());
+            _logger.LogInformation(evidenceCount.ToString());
+
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
                 connection.Open();

@@ -5,8 +5,7 @@ resources:
 - repo: self
 
 variables:
-  dockerRegistryServiceConnection: '58dd4450-eb19-4b8e-94e8-ad4089283faf'
-  imageRepository: 'josselardinoisdependencycheckapi'
+#variables are in azure pipeline
   containerRegistry: 'codecheckregistry.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
@@ -65,6 +64,8 @@ stages:
         command: 'test'
         projects: '**/*.csproj'
         testRunTitle: 'test'
+    
+  
   
 - stage: DeployToAzure
   displayName: Deploy to Azure Container Apps
@@ -74,24 +75,18 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - script: |
-        pwd
-        ls $(Build.SourcesDirectory)  # List contents of the repository root directory
-        cat $(Build.SourcesDirectory)/Dockerfile  # List contents of the app source directory
-      displayName: Verify Source Contents  # Debugging step
     - task: AzureContainerApps@1
       inputs:
         appSourcePath: '$(Build.SourcesDirectory)'
         dockerfilePath: '/Dockerfile'
-        azureSubscription: 'Azure for Students(1965b804-bfa4-4d48-9278-f789305ae2d3)'
-        acrName: 'codecheckregistry'
-        acrPassword: 'b0VPgwG5TRAvFjgSxNME6pSsUD46gGzCWA3p13IHC0+ACRCwdlpy'
-        imageToDeploy: 'codecheckregistry.azurecr.io/josselardinoisdependencycheckapi:latest'
+        azureSubscription: '$(azureSubscription)'
+        acrName: '$(acrName)'
+        acrPassword: '$(acrPassword)'
+        imageToDeploy: '$(image)'
+        imageToBuild: '$(image)'
+        containerAppEnvironment: '$(containerAppEnvironment)'
         containerAppName: 'dependencycheckapp'
         resourceGroup: 'DefaultResourceGroup-WEU'
         runtimeStack: 'mcr.microsoft.com/oryx/dotnetcore:6.0'
-        targetPort: '8080'
-        environmentVariables: |
-          BlobConnectionString=DefaultEndpointsProtocol=https;AccountName=azurefunctionjosse;AccountKey=1UxIKvjBV2Bjrf1E/R/7+zMDD9lB62VyL6iWEztw1Hp4hzPpl0AHab2DfYGNakadV1paGMCYBHUO+AStpEjiBA==;EndpointSuffix=core.windows.net
-          BlobContainerName=testcontainer
-          DBConnectionString=Server=tcp:eudbserverjosse.database.windows.net,1433;Initial Catalog=DependencyCheckDatabase;Persist Security Info=False;User ID=josseadmin;Password=Password123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=45;
+        targetPort: '$(targetPort)'
+        environmentVariables: '$(environmentVariables)'

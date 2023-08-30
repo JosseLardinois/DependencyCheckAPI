@@ -43,7 +43,6 @@ namespace DependencyCheckAPI.Repositories
                 string projectPath = foldername;
                 string outputPath = projectPath;
                 string dependencyCheckPath = "/app/dependency-check/dependency-check/bin/dependency-check.sh";
-                Console.WriteLine(dependencyCheckPath);
 
                 if (Directory.Exists(projectPath))
                 {

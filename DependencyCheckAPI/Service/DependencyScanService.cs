@@ -5,9 +5,9 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace DependencyCheckAPI.Repositories
+namespace DependencyCheckAPI.Service
 {
-    public class DependencyScanRepository : IDependencyScanRepository
+    public class DependencyScanService : IDependencyScanService
     {
         public async Task UnzipFolder(string filename)
         {

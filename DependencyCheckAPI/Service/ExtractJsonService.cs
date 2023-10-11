@@ -6,14 +6,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace DependencyCheckAPI.Repositories
+namespace DependencyCheckAPI.Service
+
+
 {
-    public class ExtractJsonRepository : IExtractJson
+    public class ExtractJsonService : IExtractJsonService
     {
         private readonly ISQLResultsStorage _sqlStorage;
-        private readonly ISQLResultsRepository _sqlRepository;
+        private readonly ISQLResultsService _sqlRepository;
 
-        public ExtractJsonRepository(ISQLResultsStorage storage, ISQLResultsRepository sqlRepository)
+        public ExtractJsonService(ISQLResultsStorage storage, ISQLResultsService sqlRepository)
         {
             _sqlStorage = storage;
             _sqlRepository = sqlRepository;
@@ -31,7 +33,7 @@ namespace DependencyCheckAPI.Repositories
             return dependencyInfos;
         }
 
-        public bool MakeNewProject(string userId, string projectName)
+        public Task<bool> MakeNewProject(string userId, string projectName)
         {
             string projectId = projectName.Replace(".zip", "");
             return _sqlRepository.InsertIfNotExistsInProjects(userId, projectId);

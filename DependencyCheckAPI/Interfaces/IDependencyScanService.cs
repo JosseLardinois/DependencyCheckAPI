@@ -1,6 +1,6 @@
 ﻿namespace DependencyCheckAPI.Interfaces
 {
-    public interface IDependencyScanRepository
+    public interface IDependencyScanService
     {
         Task UnzipFolder(string filename);
     }

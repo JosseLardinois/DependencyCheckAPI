@@ -1,4 +1,4 @@
-﻿namespace DependencyCheckAPI.Dto
+﻿namespace DependencyCheckAPI.DTO
 {
     public class DependencyCheckResultsDTO
     {

@@ -1,20 +1,24 @@
-﻿using DependencyCheckAPI.Dto;
+﻿using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 
-public class SQLResultsStorage : ISQLResultsStorage
+public class SQLResultsStorageRepository : ISQLResultsStorage
 {
     private string _DBconnectionString;
-    private readonly ILogger<SQLResultsStorage> _logger;
+    private readonly ILogger<SQLResultsStorageRepository> _logger;
 
-    public SQLResultsStorage(IConfiguration configuration, ILogger<SQLResultsStorage> logger)
+    public SQLResultsStorageRepository(IConfiguration configuration, ILogger<SQLResultsStorageRepository> logger)
     {
-            _DBconnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
-            _logger = logger;
-
+        _DBconnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+        _logger = logger;
     }
 
-    public void InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
+    public async Task InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
     {
         try
         {
@@ -27,9 +31,9 @@ public class SQLResultsStorage : ISQLResultsStorage
 
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
-                connection.Open();
+                await connection.OpenAsync();
                 SqlCommand command = CreateInsertCommand(connection, projectId, packageName, highestSeverity, cveCount, evidenceCount, baseScore);
-                ExecuteNonQueryCommand(command);
+                await ExecuteNonQueryCommand(command);
             }
         }
         catch (Exception ex)
@@ -39,9 +43,9 @@ public class SQLResultsStorage : ISQLResultsStorage
         }
     }
 
-    public List<DependencyCheckResultsDTO> RetrieveDependencyCheckResults(string projectId, string userId)
+    public async Task<List<DependencyCheckResultsDTO>> RetrieveDependencyCheckResults(string projectId, string userId)
     {
-        if (!DoesProjectExist(userId, projectId))
+        if (!await DoesProjectExist(userId, projectId))
         {
             _logger.LogInformation("Project does not exist.");
             return null;
@@ -49,8 +53,7 @@ public class SQLResultsStorage : ISQLResultsStorage
 
         try
         {
-            List<DependencyCheckResultsDTO> resultDtos = FetchResultsFromDatabase(projectId);
-            return resultDtos;
+            return await FetchResultsFromDatabase(projectId);
         }
         catch (Exception ex)
         {
@@ -59,8 +62,7 @@ public class SQLResultsStorage : ISQLResultsStorage
         }
     }
 
-
-    public bool CheckAndInsertIfNotExistsInProjects(string userId, string projectId)
+    public async Task<bool> CheckAndInsertIfNotExistsInProjects(string userId, string projectId)
     {
         try
         {
@@ -69,9 +71,9 @@ public class SQLResultsStorage : ISQLResultsStorage
 
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
-                connection.Open();
+                await connection.OpenAsync();
                 SqlCommand command = CreateCheckAndInsertCommand(connection, userId, projectId, projectType, dateTime);
-                int rowsAffected = command.ExecuteNonQuery();
+                int rowsAffected = await command.ExecuteNonQueryAsync();
                 return rowsAffected > 0;
             }
         }
@@ -99,42 +101,42 @@ public class SQLResultsStorage : ISQLResultsStorage
         return DateTime.Now.ToString();
     }
 
-    private bool DoesProjectExist(string userId, string projectId)
+    private async Task<bool> DoesProjectExist(string userId, string projectId)
     {
         try
         {
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
-                connection.Open();
+                await connection.OpenAsync();
                 using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Projects WHERE UserId = @UserId AND ProjectId = @ProjectId", connection))
                 {
                     command.Parameters.AddWithValue("@UserId", userId);
                     command.Parameters.AddWithValue("@ProjectId", projectId);
-                    int count = Convert.ToInt32(command.ExecuteScalar());
+                    int count = Convert.ToInt32(await command.ExecuteScalarAsync());
                     return count > 0;
                 }
             }
         }
         catch (Exception ex)
         {
-            HandleError(ex, "No existing project for user:" + userId + "with project:"+ projectId);
+            HandleError(ex, "No existing project for user:" + userId + " with project:" + projectId);
             throw;
         }
     }
 
-    private List<DependencyCheckResultsDTO> FetchResultsFromDatabase(string projectId)
+    private async Task<List<DependencyCheckResultsDTO>> FetchResultsFromDatabase(string projectId)
     {
         List<DependencyCheckResultsDTO> resultDtos = new List<DependencyCheckResultsDTO>();
         using (SqlConnection connection = new SqlConnection(_DBconnectionString))
         {
-            connection.Open();
+            await connection.OpenAsync();
             using (SqlCommand command = new SqlCommand("SELECT * FROM DependencyCheck_Results WHERE ProjectId = @ProjectId", connection))
             {
                 command.Parameters.AddWithValue("@ProjectId", projectId);
 
-                using (SqlDataReader reader = command.ExecuteReader())
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         DependencyCheckResultsDTO resultDto = new DependencyCheckResultsDTO
                         {
@@ -164,11 +166,11 @@ public class SQLResultsStorage : ISQLResultsStorage
         return command;
     }
 
-    private void ExecuteNonQueryCommand(SqlCommand command)
+    private async Task ExecuteNonQueryCommand(SqlCommand command)
     {
         try
         {
-            command.ExecuteNonQuery();
+            await command.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {

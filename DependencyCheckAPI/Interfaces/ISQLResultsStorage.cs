@@ -1,15 +1,15 @@
 ﻿
-using DependencyCheckAPI.Dto;
+using DependencyCheckAPI.DTO;
 using System.Data;
 
 namespace DependencyCheckAPI.Interfaces
 {
     public interface ISQLResultsStorage
     {
-        void InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore);
+        Task InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore);
 
-        List<DependencyCheckResultsDTO> RetrieveDependencyCheckResults(string projectId, string userId);
-        bool CheckAndInsertIfNotExistsInProjects(string userId, string projectId);
+        Task<List<DependencyCheckResultsDTO>> RetrieveDependencyCheckResults(string projectId, string userId);
+        Task<bool> CheckAndInsertIfNotExistsInProjects(string userId, string projectId);
 
 
 

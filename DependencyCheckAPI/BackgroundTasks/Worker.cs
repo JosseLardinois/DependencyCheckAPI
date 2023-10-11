@@ -1,5 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
-using DependencyCheckAPI.Dto;
+using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
 using Newtonsoft.Json;
 
@@ -7,20 +7,20 @@ namespace BackgroundTasks.Worker
 {
     public class Worker : BackgroundService
     {
-        private readonly IDependencyScanRepository _dependencyScanRepository;
-        private readonly IExtractJson _extractJson;
-        private readonly IAzureFileRepository _azureRepository;
+        private readonly IDependencyScanService _dependencyScanService;
+        private readonly IExtractJsonService _extractJson;
+        private readonly IAzureFileService _azureService;
         private readonly ILogger<Worker> _logger;
         private readonly string _serviceBusConnectionString;
         private readonly string _topicName;
         private readonly string _subscriptionName;
 
-        public Worker(ILogger<Worker> logger, IDependencyScanRepository dependencyScanRepository, IExtractJson extractJson, IAzureFileRepository azureRepository)
+        public Worker(ILogger<Worker> logger, IDependencyScanService dependencyScanService, IExtractJsonService extractJson, IAzureFileService azureFileService)
         {
             _logger = logger;
-            _dependencyScanRepository = dependencyScanRepository;
+            _dependencyScanService = dependencyScanService;
             _extractJson = extractJson;
-            _azureRepository = azureRepository;
+            _azureService = azureFileService;
 
             // Replace these values with your actual Azure Service Bus connection string, topic name, and subscription name.
 
@@ -45,7 +45,8 @@ namespace BackgroundTasks.Worker
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(10000, stoppingToken);
+                Console.WriteLine("Waiting for message...");
             }
 
             // Stop processing
@@ -118,7 +119,7 @@ namespace BackgroundTasks.Worker
         public async Task<string> DependencyCheck(string filename, string userId)
         {
             // Check if file exists
-            if (!await _azureRepository.DoesFileExistInBlob(filename, userId))
+            if (!await _azureService.DoesFileExistInBlob(filename, userId))
             {
 
                 return $"File {filename} not found in container.";
@@ -126,7 +127,7 @@ namespace BackgroundTasks.Worker
             try
             {
                 // Download file
-                BlobDto? file = await _azureRepository.GetBlobFile(filename, userId);
+                ScanReportDTO? file = await _azureService.GetBlobFile(filename, userId);
                 if (file == null)
                 {
                     // Was not, return error message to client
@@ -134,12 +135,12 @@ namespace BackgroundTasks.Worker
                 }
 
                 // Execute dependencyscan
-                await _dependencyScanRepository.UnzipFolder(filename);
+                await _dependencyScanService.UnzipFolder(filename);
                 Console.WriteLine("[INFO] Dependency Scan Successfull Executed");
 
 
                 // Upload report to blob for later inspection
-                await _azureRepository.UploadHtmlReport(filename, userId);
+                await _azureService.UploadHtmlReport(filename, userId);
 
                 //Make a new project with user
                 _extractJson.MakeNewProject(userId, filename);

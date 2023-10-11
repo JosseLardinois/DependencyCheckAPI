@@ -1,34 +1,35 @@
-﻿using DependencyCheckAPI.Dto;
+﻿using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
 using DependencyCheckAPI.Models;
 using System.Data;
 
-namespace DependencyCheckAPI.Repositories
+namespace DependencyCheckAPI.Service
 {
-    public class SQLResultsRepository : ISQLResultsRepository
+    public class SQLResultsService : ISQLResultsService
     {
         private readonly ISQLResultsStorage _storage;
 
-        public SQLResultsRepository(ISQLResultsStorage storage)
+        public SQLResultsService(ISQLResultsStorage storage)
         {
 
             _storage = storage;
         }
 
-        public void InsertDependencyInfosIntoDatabase(string filename, List<DependencyInfo> dependencyInfos)
+        public Task InsertDependencyInfosIntoDatabase(string filename, List<DependencyInfo> dependencyInfos)
         {
             foreach (DependencyInfo info in dependencyInfos)
             {
-                _storage.InsertIntoDependencyCheckResults(filename, info.PackageName, info.HighestSeverity, info.CveCount, info.EvidenceCount, info.BaseScore);
+                return _storage.InsertIntoDependencyCheckResults(filename, info.PackageName, info.HighestSeverity, info.CveCount, info.EvidenceCount, info.BaseScore);
             }
+            return Task.CompletedTask;
         }
 
-        public bool InsertIfNotExistsInProjects(string userId, string projectId)
+        public Task<bool> InsertIfNotExistsInProjects(string userId, string projectId)
         {
             return _storage.CheckAndInsertIfNotExistsInProjects(userId, projectId);
         }
 
-        public List<DependencyCheckResultsDTO> GetResults(string userId, string projectId)
+        public Task<List<DependencyCheckResultsDTO>> GetResults(string userId, string projectId)
         {
             try
             {

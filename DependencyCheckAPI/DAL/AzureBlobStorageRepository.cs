@@ -1,18 +1,18 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using DependencyCheckAPI.Dto;
+using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
 
 namespace DependencyCheckAPI.DAL
 {
-    public class AzureBlobStorage : IAzureBlobStorage
+    public class AzureBlobStorageRepository : IAzureBlobStorage
     {
         private readonly string _storageConnectionString;
         private readonly string _storageContainerName;
-        private readonly ILogger<AzureBlobStorage> _logger;
+        private readonly ILogger<AzureBlobStorageRepository> _logger;
 
-        public AzureBlobStorage(ILogger<AzureBlobStorage> logger)
+        public AzureBlobStorageRepository(ILogger<AzureBlobStorageRepository> logger)
         {
                 _storageConnectionString = Environment.GetEnvironmentVariable("BlobConnectionString");
                 _storageContainerName = Environment.GetEnvironmentVariable("BlobContainerName");
@@ -20,7 +20,7 @@ namespace DependencyCheckAPI.DAL
         }
 
 
-        public async Task<BlobDto> DownloadAsyncInstantDownload(string blobFilename,string userId)
+        public async Task<ScanReportDTO> DownloadAsyncInstantDownload(string blobFilename,string userId)
         {
             BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
             string destinationFilePath = blobFilename;
@@ -41,7 +41,7 @@ namespace DependencyCheckAPI.DAL
 
 
                     // Create a new BlobDto with the downloaded file details
-                    return new BlobDto { FilePath = destinationFilePath, Name = name, ContentType = contentType };
+                    return new ScanReportDTO { FilePath = destinationFilePath, Name = name, ContentType = contentType };
                 }
             }
             catch (RequestFailedException ex)
@@ -56,7 +56,7 @@ namespace DependencyCheckAPI.DAL
             return null;
         }
 
-        public async Task<BlobDto> UploadHtmlFileToBlobAsync(string blobFileName, string userId)
+        public async Task<ScanReportDTO> UploadHtmlFileToBlobAsync(string blobFileName, string userId)
         {
             string foldername = blobFileName.Replace(".zip", "");
             string htmlFilePath = foldername + @"/dependency-check-report.html";
@@ -83,7 +83,7 @@ namespace DependencyCheckAPI.DAL
                 string contentType = properties.ContentType;
 
                 // Create a new BlobDto with the uploaded file details
-                return new BlobDto { FilePath = htmlFilePath, Name = blobFileName, ContentType = contentType };
+                return new ScanReportDTO { FilePath = htmlFilePath, Name = blobFileName, ContentType = contentType };
             }
             catch (Exception ex)
             {

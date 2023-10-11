@@ -1,25 +1,25 @@
-﻿using DependencyCheckAPI.Dto;
+﻿using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
 
-namespace DependencyCheckAPI.Repositories
+namespace DependencyCheckAPI.Service
 {
-    public class AzureFileRepository : IAzureFileRepository
+    public class AzureFileService : IAzureFileService
     {
         private readonly IAzureBlobStorage _storage;
 
-        public AzureFileRepository(IAzureBlobStorage storage)
+        public AzureFileService(IAzureBlobStorage storage)
         {
             _storage = storage;
         }
 
-        public async Task<BlobDto> GetBlobFile(string filename, string userId)
+        public async Task<ScanReportDTO> GetBlobFile(string filename, string userId)
         {
-            BlobDto? file = await _storage.DownloadAsyncInstantDownload(filename, userId);
+            ScanReportDTO? file = await _storage.DownloadAsyncInstantDownload(filename, userId);
             return file;
         }
-        public async Task<BlobDto> UploadHtmlReport(string filename, string userId)
+        public async Task<ScanReportDTO> UploadHtmlReport(string filename, string userId)
         {
-            BlobDto? file = await _storage.UploadHtmlFileToBlobAsync(filename, userId);
+            ScanReportDTO? file = await _storage.UploadHtmlFileToBlobAsync(filename, userId);
             return file;
         }
         public async Task<bool> DoesFileExistInBlob(string filename, string userId)

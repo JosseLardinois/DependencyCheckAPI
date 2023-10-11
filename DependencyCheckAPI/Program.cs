@@ -1,7 +1,8 @@
 using BackgroundTasks.Worker;
 using DependencyCheckAPI.DAL;
 using DependencyCheckAPI.Interfaces;
-using DependencyCheckAPI.Repositories;
+using DependencyCheckAPI.Service
+    ;
 
 
 
@@ -13,12 +14,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<IDependencyScanRepository, DependencyScanRepository>();
-builder.Services.AddSingleton<IAzureBlobStorage, AzureBlobStorage>();
-builder.Services.AddSingleton<IExtractJson, ExtractJsonRepository>();
-builder.Services.AddSingleton<IAzureFileRepository, AzureFileRepository>();
-builder.Services.AddSingleton<ISQLResultsStorage, SQLResultsStorage>();
-builder.Services.AddSingleton<ISQLResultsRepository, SQLResultsRepository>();
+builder.Services.AddSingleton<IDependencyScanService, DependencyScanService>();
+builder.Services.AddSingleton<IAzureBlobStorage, AzureBlobStorageRepository>();
+builder.Services.AddSingleton<IExtractJsonService, ExtractJsonService>();
+builder.Services.AddSingleton<IAzureFileService, AzureFileService>();
+builder.Services.AddSingleton<ISQLResultsStorage, SQLResultsStorageRepository>();
+builder.Services.AddSingleton<ISQLResultsService, SQLResultsService>();
 builder.Services.AddHostedService<Worker>();
 var app = builder.Build();
 // Configure the HTTP request pipeline.

@@ -1,6 +1,6 @@
-﻿namespace DependencyCheckAPI.Dto
+﻿namespace DependencyCheckAPI.Models
 {
-    public class BlobDto
+    public class ScanReport
     {
         public string? Uri { get; set; }
         public string? Name { get; set; }

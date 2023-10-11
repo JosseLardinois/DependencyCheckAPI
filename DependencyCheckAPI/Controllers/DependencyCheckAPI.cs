@@ -1,6 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using DependencyCheckAPI.Interfaces;
-using DependencyCheckAPI.Dto;
+using DependencyCheckAPI.DTO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using System;
 
 namespace DependencyCheckAPI.Controllers
 {
@@ -8,32 +13,32 @@ namespace DependencyCheckAPI.Controllers
     [Route("[controller]")]
     public class DependencyCheckAPI : ControllerBase
     {
-        private readonly IDependencyScanRepository _dependencyScanRepository;
-        private readonly IExtractJson _extractJson;
-        private readonly IAzureFileRepository _azureRepository;
-        private readonly ISQLResultsRepository _resultsRepository;
+        private readonly IDependencyScanService _dependencyScanRepository;
+        private readonly IExtractJsonService _extractJson;
+        private readonly IAzureFileService _azureRepository;
+        private readonly ISQLResultsService _resultsService;
 
-
-        public DependencyCheckAPI(IDependencyScanRepository dependencyScanRepository, IExtractJson extractJson, IAzureFileRepository azureRepository, ISQLResultsRepository resultsRepository)
+        public DependencyCheckAPI(IDependencyScanService dependencyScanRepository, IExtractJsonService extractJson, IAzureFileService azureRepository, ISQLResultsService resultsService)
         {
             _dependencyScanRepository = dependencyScanRepository;
             _extractJson = extractJson;
             _azureRepository = azureRepository;
-            _resultsRepository = resultsRepository;
+            _resultsService = resultsService;
         }
 
         [HttpGet("GetResults")]
-        public IActionResult GetResults(string userid, string filename)
+        public async Task<IActionResult> GetResults(string userid, string filename)
         {
             try
             {
-                List<DependencyCheckResultsDTO> result = _resultsRepository.GetResults(userid, filename);
+                List<DependencyCheckResultsDTO> result = await _resultsService.GetResults(userid, filename);
                 if (result == null)
                 {
                     return StatusCode(StatusCodes.Status400BadRequest, "Project does not exist, run scan again!");
                 }
-                if (result.Count() == 0) {
-                    return StatusCode(StatusCodes.Status200OK, "No dependency vulnerabilities found, check the html report for ensurance!");
+                if (!result.Any())
+                {
+                    return StatusCode(StatusCodes.Status200OK, "No dependency vulnerabilities found, check the html report for assurance!");
                 }
                 return Ok(result);
             }
@@ -42,7 +47,6 @@ namespace DependencyCheckAPI.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, $"An error occurred: {ex.Message}");
             }
         }
-
         /*
         [HttpGet("DependencyCheck")]
         public async Task<IActionResult> DependencyCheck(string filename, string userId)
@@ -62,14 +66,14 @@ namespace DependencyCheckAPI.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, $"File {filename} could not be downloaded.");
                 }
 
-                // Execute dependencyscan
+                // Execute dependency scan
                 await _dependencyScanRepository.UnzipFolder(filename);
-                Console.WriteLine("dependecyscan executed");
+                Console.WriteLine("dependency scan executed");
 
                 // Upload report to blob for later inspection
                 await _azureRepository.UploadHtmlReport(filename, userId);
 
-                //Make a new project with user
+                // Make a new project with user
                 _extractJson.MakeNewProject(userId, filename);
 
                 // Store main vulnerabilities
@@ -83,7 +87,6 @@ namespace DependencyCheckAPI.Controllers
                 // You can also log the error if needed.
                 return StatusCode(StatusCodes.Status500InternalServerError, $"An error occurred: {ex.Message}");
             }
-        }
-        */
+        }*/
     }
 }

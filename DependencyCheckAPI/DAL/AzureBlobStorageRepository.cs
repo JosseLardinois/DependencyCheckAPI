@@ -3,10 +3,11 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
+using DependencyCheckAPI.Models;
 
 namespace DependencyCheckAPI.DAL
 {
-    public class AzureBlobStorageRepository : IAzureBlobStorage
+    public class AzureBlobStorageRepository : IAzureBlobStorageRepository
     {
         private readonly string _storageConnectionString;
         private readonly string _storageContainerName;
@@ -20,7 +21,7 @@ namespace DependencyCheckAPI.DAL
         }
 
 
-        public async Task<ScanReportDTO> DownloadAsyncInstantDownload(string blobFilename,string userId)
+        public async Task<ScanReport> DownloadAsyncInstantDownload(string blobFilename,string userId)
         {
             BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
             string destinationFilePath = blobFilename;
@@ -41,7 +42,7 @@ namespace DependencyCheckAPI.DAL
 
 
                     // Create a new BlobDto with the downloaded file details
-                    return new ScanReportDTO { FilePath = destinationFilePath, Name = name, ContentType = contentType };
+                    return new ScanReport { FilePath = destinationFilePath, Name = name, ContentType = contentType };
                 }
             }
             catch (RequestFailedException ex)
@@ -56,7 +57,7 @@ namespace DependencyCheckAPI.DAL
             return null;
         }
 
-        public async Task<ScanReportDTO> UploadHtmlFileToBlobAsync(string blobFileName, string userId)
+        public async Task<ScanReport> UploadHtmlFileToBlobAsync(string blobFileName, string userId)
         {
             string foldername = blobFileName.Replace(".zip", "");
             string htmlFilePath = foldername + @"/dependency-check-report.html";
@@ -83,7 +84,7 @@ namespace DependencyCheckAPI.DAL
                 string contentType = properties.ContentType;
 
                 // Create a new BlobDto with the uploaded file details
-                return new ScanReportDTO { FilePath = htmlFilePath, Name = blobFileName, ContentType = contentType };
+                return new ScanReport { FilePath = htmlFilePath, Name = blobFileName, ContentType = contentType };
             }
             catch (Exception ex)
             {

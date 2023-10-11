@@ -7,9 +7,9 @@ namespace DependencyCheckAPI.Service
 {
     public class SQLResultsService : ISQLResultsService
     {
-        private readonly ISQLResultsStorage _storage;
+        private readonly ISQLResultsStorageRepository _storage;
 
-        public SQLResultsService(ISQLResultsStorage storage)
+        public SQLResultsService(ISQLResultsStorageRepository storage)
         {
 
             _storage = storage;
@@ -29,7 +29,7 @@ namespace DependencyCheckAPI.Service
             return _storage.CheckAndInsertIfNotExistsInProjects(userId, projectId);
         }
 
-        public Task<List<DependencyCheckResultsDTO>> GetResults(string userId, string projectId)
+        public async Task<List<DependencyCheckResultsDTO>> GetResults(string userId, string projectId)
         {
             try
             {
@@ -37,12 +37,43 @@ namespace DependencyCheckAPI.Service
                 {
                     throw new ArgumentException("User ID and project ID cannot be empty or null.");
                 }
-                return _storage.RetrieveDependencyCheckResults(projectId, userId);
+                var sqlResults = await _storage.RetrieveDependencyCheckResults(projectId, userId);
+                return sqlResults.Select(MapToDTO).ToList();
             }
             catch (Exception ex)
             {
                 throw new Exception("An error occurred while retrieving results.", ex);
             }
+        }
+
+
+        private DependencyCheckResults MapToModel(DependencyCheckResultsDTO dependencyCheckResultsDTO)
+        {
+            return new DependencyCheckResults
+            {
+                Id = dependencyCheckResultsDTO.Id,
+                ProjectId = dependencyCheckResultsDTO.ProjectId,
+                PackageName = dependencyCheckResultsDTO.PackageName,
+                HighestSeverity = dependencyCheckResultsDTO.HighestSeverity,
+                CveCount = dependencyCheckResultsDTO.CveCount,
+                EvidenceCount = dependencyCheckResultsDTO.EvidenceCount,
+                BaseScore = dependencyCheckResultsDTO.BaseScore,
+
+            };
+
+    }
+        private DependencyCheckResultsDTO MapToDTO(DependencyCheckResults dependencyCheckResults)
+        {
+            return new DependencyCheckResultsDTO
+            {
+                Id = dependencyCheckResults.Id,
+                ProjectId = dependencyCheckResults.ProjectId,
+                PackageName = dependencyCheckResults.PackageName,
+                HighestSeverity = dependencyCheckResults.HighestSeverity,
+                CveCount = dependencyCheckResults.CveCount,
+                EvidenceCount = dependencyCheckResults.EvidenceCount,
+                BaseScore = dependencyCheckResults.BaseScore,
+            };
         }
     }
 }

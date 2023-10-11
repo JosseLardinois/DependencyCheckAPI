@@ -1,5 +1,6 @@
 ﻿using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
+using DependencyCheckAPI.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
-public class SQLResultsStorageRepository : ISQLResultsStorage
+public class SQLResultsStorageRepository : ISQLResultsStorageRepository
 {
     private string _DBconnectionString;
     private readonly ILogger<SQLResultsStorageRepository> _logger;
@@ -43,7 +44,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorage
         }
     }
 
-    public async Task<List<DependencyCheckResultsDTO>> RetrieveDependencyCheckResults(string projectId, string userId)
+    public async Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectId, string userId)
     {
         if (!await DoesProjectExist(userId, projectId))
         {
@@ -124,9 +125,9 @@ public class SQLResultsStorageRepository : ISQLResultsStorage
         }
     }
 
-    private async Task<List<DependencyCheckResultsDTO>> FetchResultsFromDatabase(string projectId)
+    private async Task<IEnumerable<DependencyCheckResults>> FetchResultsFromDatabase(string projectId)
     {
-        List<DependencyCheckResultsDTO> resultDtos = new List<DependencyCheckResultsDTO>();
+        List<DependencyCheckResults> resultList = new List<DependencyCheckResults>();
         using (SqlConnection connection = new SqlConnection(_DBconnectionString))
         {
             await connection.OpenAsync();
@@ -138,7 +139,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorage
                 {
                     while (await reader.ReadAsync())
                     {
-                        DependencyCheckResultsDTO resultDto = new DependencyCheckResultsDTO
+                        DependencyCheckResults results = new DependencyCheckResults
                         {
                             Id = (int)reader["Id"],
                             ProjectId = reader["ProjectId"] as string,
@@ -148,12 +149,12 @@ public class SQLResultsStorageRepository : ISQLResultsStorage
                             EvidenceCount = (int)reader["EvidenceCount"],
                             BaseScore = (double)reader["BaseScore"]
                         };
-                        resultDtos.Add(resultDto);
+                        resultList.Add(results);
                     }
                 }
             }
         }
-        return resultDtos;
+        return resultList;
     }
 
     private SqlCommand CreateCheckAndInsertCommand(SqlConnection connection, string userId, string projectId, string projectType, string dateTime)

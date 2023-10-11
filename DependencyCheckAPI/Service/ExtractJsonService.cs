@@ -12,10 +12,10 @@ namespace DependencyCheckAPI.Service
 {
     public class ExtractJsonService : IExtractJsonService
     {
-        private readonly ISQLResultsStorage _sqlStorage;
+        private readonly ISQLResultsStorageRepository _sqlStorage;
         private readonly ISQLResultsService _sqlRepository;
 
-        public ExtractJsonService(ISQLResultsStorage storage, ISQLResultsService sqlRepository)
+        public ExtractJsonService(ISQLResultsStorageRepository storage, ISQLResultsService sqlRepository)
         {
             _sqlStorage = storage;
             _sqlRepository = sqlRepository;

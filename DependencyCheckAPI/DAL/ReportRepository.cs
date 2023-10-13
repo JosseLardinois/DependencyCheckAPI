@@ -1,19 +1,18 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
 using DependencyCheckAPI.Models;
 
 namespace DependencyCheckAPI.DAL
 {
-    public class AzureBlobStorageRepository : IAzureBlobStorageRepository
+    public class ReportRepository : IReportRepository
     {
         private readonly string _storageConnectionString;
         private readonly string _storageContainerName;
-        private readonly ILogger<AzureBlobStorageRepository> _logger;
+        private readonly ILogger<ReportRepository> _logger;
 
-        public AzureBlobStorageRepository(ILogger<AzureBlobStorageRepository> logger)
+        public ReportRepository(ILogger<ReportRepository> logger)
         {
                 _storageConnectionString = Environment.GetEnvironmentVariable("BlobConnectionString");
                 _storageContainerName = Environment.GetEnvironmentVariable("BlobContainerName");

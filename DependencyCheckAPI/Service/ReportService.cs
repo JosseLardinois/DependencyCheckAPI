@@ -4,11 +4,11 @@ using DependencyCheckAPI.Models;
 
 namespace DependencyCheckAPI.Service
 {
-    public class AzureFileService : IAzureFileService
+    public class ReportService : IReportService
     {
-        private readonly IAzureBlobStorageRepository _storage;
+        private readonly IReportRepository _storage;
 
-        public AzureFileService(IAzureBlobStorageRepository storage)
+        public ReportService(IReportRepository storage)
         {
             _storage = storage;
         }

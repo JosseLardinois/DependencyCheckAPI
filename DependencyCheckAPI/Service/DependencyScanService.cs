@@ -1,9 +1,6 @@
 ﻿using DependencyCheckAPI.Interfaces;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace DependencyCheckAPI.Service
 {

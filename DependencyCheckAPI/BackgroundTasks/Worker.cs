@@ -9,20 +9,19 @@ namespace BackgroundTasks.Worker
     {
         private readonly IDependencyScanService _dependencyScanService;
         private readonly IExtractJsonService _extractJson;
-        private readonly IAzureFileService _azureService;
+        private readonly IReportService _azureService;
         private readonly ILogger<Worker> _logger;
         private readonly string _serviceBusConnectionString;
         private readonly string _topicName;
         private readonly string _subscriptionName;
 
-        public Worker(ILogger<Worker> logger, IDependencyScanService dependencyScanService, IExtractJsonService extractJson, IAzureFileService azureFileService)
+        public Worker(ILogger<Worker> logger, IDependencyScanService dependencyScanService, IExtractJsonService extractJson, IReportService azureFileService)
         {
             _logger = logger;
             _dependencyScanService = dependencyScanService;
             _extractJson = extractJson;
             _azureService = azureFileService;
 
-            // Replace these values with your actual Azure Service Bus connection string, topic name, and subscription name.
 
             _serviceBusConnectionString = Environment.GetEnvironmentVariable("ServiceBusConnection");
             _topicName = Environment.GetEnvironmentVariable("TopicName");

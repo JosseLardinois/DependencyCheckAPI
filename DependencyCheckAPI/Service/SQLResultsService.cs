@@ -15,11 +15,11 @@ namespace DependencyCheckAPI.Service
             _storage = storage;
         }
 
-        public Task InsertDependencyInfosIntoDatabase(string filename, List<DependencyInfo> dependencyInfos)
+        public Task InsertDependencyInfosIntoDatabase(string filename, List<DependencyCheckResults> dependencyCheckResults)
         {
-            foreach (DependencyInfo info in dependencyInfos)
+            foreach (DependencyCheckResults result in dependencyCheckResults)
             {
-                return _storage.InsertIntoDependencyCheckResults(filename, info.PackageName, info.HighestSeverity, info.CveCount, info.EvidenceCount, info.BaseScore);
+                return _storage.InsertIntoDependencyCheckResults(filename, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
             }
             return Task.CompletedTask;
         }

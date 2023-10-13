@@ -1,10 +1,6 @@
 ﻿using DependencyCheckAPI.Interfaces;
 using DependencyCheckAPI.Models;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace DependencyCheckAPI.Service
 
@@ -12,25 +8,23 @@ namespace DependencyCheckAPI.Service
 {
     public class ExtractJsonService : IExtractJsonService
     {
-        private readonly ISQLResultsStorageRepository _sqlStorage;
         private readonly ISQLResultsService _sqlRepository;
 
-        public ExtractJsonService(ISQLResultsStorageRepository storage, ISQLResultsService sqlRepository)
+        public ExtractJsonService(ISQLResultsService sqlRepository)
         {
-            _sqlStorage = storage;
             _sqlRepository = sqlRepository;
         }
 
-        public List<DependencyInfo> ExtractJson(string fileName)
+        public List<DependencyCheckResults> ExtractJson(string fileName)
         {
             string filename = Path.GetFileNameWithoutExtension(fileName);
             string jsonFilePath = filename + "/dependency-check-report.json";
             string jsonContent = File.ReadAllText(jsonFilePath);
             JArray dependenciesArray = GetDependenciesArray(jsonContent);
 
-            List<DependencyInfo> dependencyInfos = ExtractDependencyInfos(dependenciesArray);
-            _sqlRepository.InsertDependencyInfosIntoDatabase(filename, dependencyInfos);
-            return dependencyInfos;
+            List<DependencyCheckResults> dependencyCheckResults = ExtractDependencyInfos(dependenciesArray);
+            _sqlRepository.InsertDependencyInfosIntoDatabase(filename, dependencyCheckResults);
+            return dependencyCheckResults;
         }
 
         public Task<bool> MakeNewProject(string userId, string projectName)
@@ -45,23 +39,23 @@ namespace DependencyCheckAPI.Service
             return (JArray)jsonObject["dependencies"];
         }
 
-        private List<DependencyInfo> ExtractDependencyInfos(JArray dependenciesArray)
+        private List<DependencyCheckResults> ExtractDependencyInfos(JArray dependenciesArray)
         {
-            List<DependencyInfo> dependencyInfos = new List<DependencyInfo>();
+            List<DependencyCheckResults> dependencyInfos = new List<DependencyCheckResults>();
 
             foreach (JToken dependencyToken in dependenciesArray)
             {
-                DependencyInfo dependencyInfo = ExtractDependencyInfo(dependencyToken);
-                if (dependencyInfo != null)
+                DependencyCheckResults dependencyCheckresults = ExtractDependencyInfo(dependencyToken);
+                if (dependencyCheckresults != null)
                 {
-                    dependencyInfos.Add(dependencyInfo);
+                    dependencyInfos.Add(dependencyCheckresults);
                 }
             }
 
             return dependencyInfos;
         }
 
-        private DependencyInfo ExtractDependencyInfo(JToken dependencyToken)
+        private DependencyCheckResults ExtractDependencyInfo(JToken dependencyToken)
         {
             JToken vulnerabilitiesToken = dependencyToken["vulnerabilities"];
             if (vulnerabilitiesToken == null || vulnerabilitiesToken.Type != JTokenType.Array || vulnerabilitiesToken.Count() == 0)
@@ -83,14 +77,13 @@ namespace DependencyCheckAPI.Service
                 return null;
             }
 
-            return new DependencyInfo
+            return new DependencyCheckResults
             {
-                DependencyName = dependencyName,
                 PackageName = packageName,
                 HighestSeverity = baseSeverity,
                 CveCount = cveCount,
                 EvidenceCount = evidenceCount,
-                BaseScore = baseScore
+                BaseScore = (double)baseScore
             };
         }
 

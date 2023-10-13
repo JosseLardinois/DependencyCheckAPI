@@ -1,12 +1,6 @@
-﻿using DependencyCheckAPI.DTO;
-using DependencyCheckAPI.Interfaces;
+﻿using DependencyCheckAPI.Interfaces;
 using DependencyCheckAPI.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Threading.Tasks;
 
 public class SQLResultsStorageRepository : ISQLResultsStorageRepository
 {
@@ -87,7 +81,9 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
 
     private SqlCommand CreateInsertCommand(SqlConnection connection, string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
     {
-        SqlCommand command = new SqlCommand("INSERT INTO DependencyCheck_Results (ProjectId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@ProjectId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection);
+        var Id = new Guid();
+        SqlCommand command = new SqlCommand("INSERT INTO DependencyCheckResults (Id, ProjectId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@Id, @ProjectId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection);
+        command.Parameters.AddWithValue("@Id", Id);
         command.Parameters.AddWithValue("@ProjectId", projectId);
         command.Parameters.AddWithValue("@PackageName", packageName);
         command.Parameters.AddWithValue("@HighestSeverity", highestSeverity);
@@ -109,10 +105,10 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
                 await connection.OpenAsync();
-                using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Projects WHERE UserId = @UserId AND ProjectId = @ProjectId", connection))
+                using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Projects WHERE UserId = @UserId AND Id = @Id", connection))
                 {
                     command.Parameters.AddWithValue("@UserId", userId);
-                    command.Parameters.AddWithValue("@ProjectId", projectId);
+                    command.Parameters.AddWithValue("@Id", projectId);
                     int count = Convert.ToInt32(await command.ExecuteScalarAsync());
                     return count > 0;
                 }
@@ -131,7 +127,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
         using (SqlConnection connection = new SqlConnection(_DBconnectionString))
         {
             await connection.OpenAsync();
-            using (SqlCommand command = new SqlCommand("SELECT * FROM DependencyCheck_Results WHERE ProjectId = @ProjectId", connection))
+            using (SqlCommand command = new SqlCommand("SELECT * FROM DependencyCheckResults WHERE ProjectId = @ProjectId", connection))
             {
                 command.Parameters.AddWithValue("@ProjectId", projectId);
 
@@ -141,7 +137,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
                     {
                         DependencyCheckResults results = new DependencyCheckResults
                         {
-                            Id = (int)reader["Id"],
+                            Id = (Guid)reader["Id"],
                             ProjectId = reader["ProjectId"] as string,
                             PackageName = reader["PackageName"] as string,
                             HighestSeverity = reader["HighestSeverity"] as string,
@@ -159,9 +155,9 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
 
     private SqlCommand CreateCheckAndInsertCommand(SqlConnection connection, string userId, string projectId, string projectType, string dateTime)
     {
-        SqlCommand command = new SqlCommand("IF NOT EXISTS (SELECT 1 FROM Projects WHERE UserId = @UserId AND ProjectId = @ProjectId) BEGIN INSERT INTO Projects (UserId, ProjectId, ProjectType, CreationDate) VALUES (@UserId, @ProjectId, @ProjectType, @CreationDate) END", connection);
+        SqlCommand command = new SqlCommand("IF NOT EXISTS (SELECT 1 FROM Projects WHERE UserId = @UserId AND Id = @Id) BEGIN INSERT INTO Projects (UserId, Id, ProjectType, CreationDate) VALUES (@UserId, @Id, @ProjectType, @CreationDate) END", connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        command.Parameters.AddWithValue("@ProjectId", projectId);
+        command.Parameters.AddWithValue("@Id", projectId);
         command.Parameters.AddWithValue("@ProjectType", projectType);
         command.Parameters.AddWithValue("@CreationDate", dateTime);
         return command;

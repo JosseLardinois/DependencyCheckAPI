@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using DependencyCheckAPI.Interfaces;
 using DependencyCheckAPI.DTO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using System;
 
 namespace DependencyCheckAPI.Controllers
 {
@@ -15,10 +10,10 @@ namespace DependencyCheckAPI.Controllers
     {
         private readonly IDependencyScanService _dependencyScanRepository;
         private readonly IExtractJsonService _extractJson;
-        private readonly IAzureFileService _azureRepository;
+        private readonly IReportService _azureRepository;
         private readonly ISQLResultsService _resultsService;
 
-        public DependencyCheckAPI(IDependencyScanService dependencyScanRepository, IExtractJsonService extractJson, IAzureFileService azureRepository, ISQLResultsService resultsService)
+        public DependencyCheckAPI(IDependencyScanService dependencyScanRepository, IExtractJsonService extractJson, IReportService azureRepository, ISQLResultsService resultsService)
         {
             _dependencyScanRepository = dependencyScanRepository;
             _extractJson = extractJson;
@@ -29,6 +24,7 @@ namespace DependencyCheckAPI.Controllers
         [HttpGet("GetResults")]
         public async Task<IActionResult> GetResults(string userid, string filename)
         {
+            return Ok(await _resultsService.GetResults(userid, filename));
             try
             {
                 List<DependencyCheckResultsDTO> result = await _resultsService.GetResults(userid, filename);

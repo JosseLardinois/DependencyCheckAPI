@@ -69,6 +69,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
                 await connection.OpenAsync();
                 SqlCommand command = CreateCheckAndInsertCommand(connection, userId, projectId, projectType, dateTime);
                 int rowsAffected = await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
                 return rowsAffected > 0;
             }
         }
@@ -81,7 +82,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
 
     private SqlCommand CreateInsertCommand(SqlConnection connection, string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
     {
-        var Id = new Guid();
+        var Id = Guid.NewGuid();
         SqlCommand command = new SqlCommand("INSERT INTO DependencyCheckResults (Id, ProjectId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@Id, @ProjectId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection);
         command.Parameters.AddWithValue("@Id", Id);
         command.Parameters.AddWithValue("@ProjectId", projectId);
@@ -110,6 +111,7 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
                     command.Parameters.AddWithValue("@UserId", userId);
                     command.Parameters.AddWithValue("@Id", projectId);
                     int count = Convert.ToInt32(await command.ExecuteScalarAsync());
+                    await connection.CloseAsync();
                     return count > 0;
                 }
             }

@@ -19,7 +19,7 @@ namespace DependencyCheckAPI.Service
         {
             foreach (DependencyCheckResults result in dependencyCheckResults)
             {
-                return _storage.InsertIntoDependencyCheckResults(filename, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
+                _storage.InsertIntoDependencyCheckResults(filename, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
             }
             return Task.CompletedTask;
         }

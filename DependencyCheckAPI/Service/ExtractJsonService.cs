@@ -79,6 +79,7 @@ namespace DependencyCheckAPI.Service
 
             return new DependencyCheckResults
             {
+                Id = Guid.NewGuid(),
                 PackageName = packageName,
                 HighestSeverity = baseSeverity,
                 CveCount = cveCount,

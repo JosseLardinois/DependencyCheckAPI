@@ -1,6 +1,7 @@
 ﻿using Azure.Messaging.ServiceBus;
 using DependencyCheckAPI.DTO;
 using DependencyCheckAPI.Interfaces;
+using DependencyCheckAPI.Models;
 using Newtonsoft.Json;
 
 namespace BackgroundTasks.Worker
@@ -9,23 +10,26 @@ namespace BackgroundTasks.Worker
     {
         private readonly IDependencyScanService _dependencyScanService;
         private readonly IExtractJsonService _extractJson;
-        private readonly IReportService _azureService;
+        private readonly IReportRepository _reportRepository;
         private readonly ILogger<Worker> _logger;
+        private readonly ISQLResultsStorageRepository _sqlResultsStorageRepository;
         private readonly string _serviceBusConnectionString;
         private readonly string _topicName;
         private readonly string _subscriptionName;
+        private readonly Guid _scanId;
 
-        public Worker(ILogger<Worker> logger, IDependencyScanService dependencyScanService, IExtractJsonService extractJson, IReportService azureFileService)
+        public Worker(ILogger<Worker> logger, IDependencyScanService dependencyScanService, IExtractJsonService extractJson, ISQLResultsStorageRepository sqlResultsStorageRepository, IReportRepository reportRepository)
         {
             _logger = logger;
             _dependencyScanService = dependencyScanService;
             _extractJson = extractJson;
-            _azureService = azureFileService;
 
 
-            _serviceBusConnectionString = Environment.GetEnvironmentVariable("ServiceBusConnection");
-            _topicName = Environment.GetEnvironmentVariable("TopicName");
-            _subscriptionName = Environment.GetEnvironmentVariable("SubscriptionName");
+            _serviceBusConnectionString = Environment.GetEnvironmentVariable("DCServiceBusConnection");
+            _topicName = Environment.GetEnvironmentVariable("DCTopicName");
+            _subscriptionName = Environment.GetEnvironmentVariable("DCSubscriptionName");
+            _sqlResultsStorageRepository = sqlResultsStorageRepository;
+            _reportRepository = reportRepository;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -59,7 +63,7 @@ namespace BackgroundTasks.Worker
                 // Process the message
                 string messageBody = args.Message.Body.ToString();
                 _logger.LogInformation($"Received message: {messageBody}");
-                if (!IsValidMessage(messageBody, out string filename, out string userid))
+                if (!IsValidMessage(messageBody,out string projectlanguage, out string filename, out Guid userid))
                 {
                     Console.WriteLine("Invalid message format or missing arguments.");
                     await args.AbandonMessageAsync(args.Message);
@@ -67,7 +71,7 @@ namespace BackgroundTasks.Worker
                 }
                 dynamic parsedMessage = JsonConvert.DeserializeObject(messageBody);
                 string fileName = parsedMessage.filename;
-                string userId = parsedMessage.userid;
+                Guid userId = parsedMessage.userid;
                 await DependencyCheck(fileName, userId);
 
                 // Complete the message to remove it from the subscription
@@ -89,8 +93,8 @@ namespace BackgroundTasks.Worker
             _logger.LogError($"Exception occurred while receiving message: {args.Exception.Message}");
             return Task.CompletedTask;
         }
-
-        private bool IsValidMessage(string messageBody, out string filename, out string userId)
+        //use out string for passing multiple strings
+        private bool IsValidMessage(string messageBody,out string projectlanguage, out string filename, out Guid userId)
         {
             try
             {
@@ -98,9 +102,10 @@ namespace BackgroundTasks.Worker
 
                 filename = parsedMessage.filename;
                 userId = parsedMessage.userid;
+                projectlanguage = parsedMessage.projectlanguage;
 
                 // Validate if filename and userId exist in the parsed message
-                if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(userId))
+                if (string.IsNullOrEmpty(filename) || userId == Guid.Empty || projectlanguage != "c#")
                 {
                     return false;
                 }
@@ -109,29 +114,19 @@ namespace BackgroundTasks.Worker
             }
             catch
             {
+                projectlanguage = null;
                 filename = null;
-                userId = null;
+                userId = Guid.Empty;
                 return false;
 
             }
         }
-        public async Task<string> DependencyCheck(string filename, string userId)
+        public async Task<string> DependencyCheck(string filename, Guid userId)
         {
-            // Check if file exists
-            if (!await _azureService.DoesFileExistInBlob(filename, userId))
-            {
-
-                return $"File {filename} not found in container.";
-            }
             try
             {
                 // Download file
-                ScanReportDTO? file = await _azureService.GetBlobFile(filename, userId);
-                if (file == null)
-                {
-                    // Was not, return error message to client
-                    return $"File {filename} could not be downloaded.";
-                }
+                await _reportRepository.DownloadAsyncInstantDownload(filename, userId.ToString());
 
                 // Execute dependencyscan
                 await _dependencyScanService.UnzipFolder(filename);
@@ -139,13 +134,18 @@ namespace BackgroundTasks.Worker
 
 
                 // Upload report to blob for later inspection
-                await _azureService.UploadHtmlReport(filename, userId);
+                await _reportRepository.UploadHtmlFileToBlobAsync(filename, userId.ToString());
+                Console.WriteLine("[INFO] Report Uploaded");
+                //Make a new scan
+                var scanId = await _sqlResultsStorageRepository.CreateScan(filename, userId);
+                //Get the Id and use it for scanId in the DependencyCheckResults created/insertion
+                Console.WriteLine("[INFO] Dependency Scan Created");
 
-                //Make a new project with user
-                _extractJson.MakeNewProject(userId, filename);
-
-                // Store main vulnerabilities
-                _extractJson.ExtractJson(filename);
+                // Get vulnerabilities
+                var dependencyCheckResults = _extractJson.ExtractJson(filename, scanId);
+                Console.WriteLine("[INFO] Dependency Scan Successfull Executed");
+                Console.WriteLine("[INFO] JSON Successfully Extracted");
+                //store results
 
                 return "ok";
             }
@@ -156,5 +156,6 @@ namespace BackgroundTasks.Worker
                 return $"An error occurred: {ex.Message}";
             }
         }
+
     }
 }

@@ -15,33 +15,22 @@ namespace DependencyCheckAPI.Service
             _storage = storage;
         }
 
-        public Task InsertDependencyInfosIntoDatabase(string filename, List<DependencyCheckResults> dependencyCheckResults)
+        public async Task<Guid> CreateScan(Guid createdBy, string projectName)
         {
-            foreach (DependencyCheckResults result in dependencyCheckResults)
-            {
-                _storage.InsertIntoDependencyCheckResults(filename, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
-            }
-            return Task.CompletedTask;
+            var scanId = await _storage.CreateScan(projectName, createdBy);
+            return scanId;
         }
 
-        public Task<bool> InsertIfNotExistsInProjects(string userId, string projectId)
-        {
-            return _storage.CheckAndInsertIfNotExistsInProjects(userId, projectId);
-        }
-
-        public async Task<List<DependencyCheckResultsDTO>> GetResults(string userId, string projectId)
+        public async Task<List<DependencyCheckResultsDTO>> GetResults(string projectName)
         {
             try
             {
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(projectId))
-                {
-                    throw new ArgumentException("User ID and project ID cannot be empty or null.");
-                }
-                var sqlResults = await _storage.RetrieveDependencyCheckResults(projectId, userId);
+                var sqlResults = await _storage.RetrieveDependencyCheckResults(projectName);
                 return sqlResults.Select(MapToDTO).ToList();
             }
             catch (Exception ex)
             {
+                // Log the exception if necessary
                 throw new Exception("An error occurred while retrieving results.", ex);
             }
         }
@@ -52,7 +41,7 @@ namespace DependencyCheckAPI.Service
             return new DependencyCheckResults
             {
                 Id = dependencyCheckResultsDTO.Id,
-                ProjectId = dependencyCheckResultsDTO.ProjectId,
+                ScanId = dependencyCheckResultsDTO.ScanId,
                 PackageName = dependencyCheckResultsDTO.PackageName,
                 HighestSeverity = dependencyCheckResultsDTO.HighestSeverity,
                 CveCount = dependencyCheckResultsDTO.CveCount,
@@ -67,7 +56,7 @@ namespace DependencyCheckAPI.Service
             return new DependencyCheckResultsDTO
             {
                 Id = dependencyCheckResults.Id,
-                ProjectId = dependencyCheckResults.ProjectId,
+                ScanId = dependencyCheckResults.ScanId,
                 PackageName = dependencyCheckResults.PackageName,
                 HighestSeverity = dependencyCheckResults.HighestSeverity,
                 CveCount = dependencyCheckResults.CveCount,

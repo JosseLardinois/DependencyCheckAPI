@@ -17,7 +17,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IDependencyScanService, DependencyScanService>();
 builder.Services.AddSingleton<IReportRepository, ReportRepository>();
 builder.Services.AddSingleton<IExtractJsonService, ExtractJsonService>();
-builder.Services.AddSingleton<IReportService, ReportService>();
 builder.Services.AddSingleton<ISQLResultsStorageRepository, SQLResultsStorageRepository>();
 builder.Services.AddSingleton<ISQLResultsService, SQLResultsService>();
 builder.Services.AddHostedService<Worker>();

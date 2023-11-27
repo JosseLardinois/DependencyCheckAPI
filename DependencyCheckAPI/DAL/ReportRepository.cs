@@ -14,7 +14,7 @@ namespace DependencyCheckAPI.DAL
 
         public ReportRepository(ILogger<ReportRepository> logger)
         {
-                _storageConnectionString = Environment.GetEnvironmentVariable("BlobConnectionString");
+                _storageConnectionString = Environment.GetEnvironmentVariable("DCAzureBlobCS");
                 _storageContainerName = Environment.GetEnvironmentVariable("BlobContainerName");
                 _logger = logger;
         }

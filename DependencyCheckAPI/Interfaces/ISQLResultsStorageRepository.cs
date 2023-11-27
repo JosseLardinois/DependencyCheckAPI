@@ -7,12 +7,13 @@ namespace DependencyCheckAPI.Interfaces
 {
     public interface ISQLResultsStorageRepository
     {
-        Task InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore);
+        Task InsertIntoDependencyCheckResults(Guid scanId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore);
 
-        Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectId, string userId);
-        Task<bool> CheckAndInsertIfNotExistsInProjects(string userId, string projectId);
+        Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectName);
 
+        Task<Guid> CreateScan(string projectName, Guid createdBy);
 
+        Task InsertDependencyInfosIntoDatabase(Guid scanId, List<DependencyCheckResults> dependencyCheckResults);
 
     }
 }

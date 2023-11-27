@@ -8,29 +8,25 @@ namespace DependencyCheckAPI.Service
 {
     public class ExtractJsonService : IExtractJsonService
     {
-        private readonly ISQLResultsService _sqlRepository;
+        private readonly ISQLResultsStorageRepository _sqlResultsStorageRepository;
 
-        public ExtractJsonService(ISQLResultsService sqlRepository)
+        public ExtractJsonService(ISQLResultsStorageRepository sqlResultsStorageRepository)
         {
-            _sqlRepository = sqlRepository;
+            _sqlResultsStorageRepository = sqlResultsStorageRepository;
         }
 
-        public List<DependencyCheckResults> ExtractJson(string fileName)
+        public List<DependencyCheckResults> ExtractJson(string fileName, Guid scanId)
         {
             string filename = Path.GetFileNameWithoutExtension(fileName);
             string jsonFilePath = filename + "/dependency-check-report.json";
             string jsonContent = File.ReadAllText(jsonFilePath);
             JArray dependenciesArray = GetDependenciesArray(jsonContent);
 
-            List<DependencyCheckResults> dependencyCheckResults = ExtractDependencyInfos(dependenciesArray);
-            _sqlRepository.InsertDependencyInfosIntoDatabase(filename, dependencyCheckResults);
-            return dependencyCheckResults;
-        }
 
-        public Task<bool> MakeNewProject(string userId, string projectName)
-        {
-            string projectId = projectName.Replace(".zip", "");
-            return _sqlRepository.InsertIfNotExistsInProjects(userId, projectId);
+
+            List<DependencyCheckResults> dependencyCheckResults = ExtractDependencyInfos(dependenciesArray);
+            _sqlResultsStorageRepository.InsertDependencyInfosIntoDatabase(scanId, dependencyCheckResults);
+            return dependencyCheckResults;
         }
 
         private JArray GetDependenciesArray(string jsonContent)

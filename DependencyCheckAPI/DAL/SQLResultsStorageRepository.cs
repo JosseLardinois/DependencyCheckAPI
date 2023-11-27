@@ -1,5 +1,8 @@
-﻿using DependencyCheckAPI.Interfaces;
+﻿using Dapper;
+using DependencyCheckAPI.Interfaces;
 using DependencyCheckAPI.Models;
+using Microsoft.AspNetCore.Http;
+using System.Data;
 using System.Data.SqlClient;
 
 public class SQLResultsStorageRepository : ISQLResultsStorageRepository
@@ -9,26 +12,46 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
 
     public SQLResultsStorageRepository(IConfiguration configuration, ILogger<SQLResultsStorageRepository> logger)
     {
-        _DBconnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+        _DBconnectionString = Environment.GetEnvironmentVariable("DCDBCS");
         _logger = logger;
     }
 
-    public async Task InsertIntoDependencyCheckResults(string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
+
+
+    private IDbConnection CreateConnection()
+    {
+        return new SqlConnection(_DBconnectionString);
+    }
+
+    public async Task InsertIntoDependencyCheckResults(Guid scanId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
     {
         try
         {
-            projectId = projectId ?? "null";
-            packageName = packageName ?? "null";
-            highestSeverity = highestSeverity ?? "null";
+            packageName = packageName ?? string.Empty;
+            highestSeverity = highestSeverity ?? string.Empty;
+
+            // For nullable integers and doubles
             cveCount = cveCount ?? 0;
             evidenceCount = evidenceCount ?? 0;
-            baseScore = baseScore ?? 0;
+            baseScore = baseScore ?? 0.0;
 
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
                 await connection.OpenAsync();
-                SqlCommand command = CreateInsertCommand(connection, projectId, packageName, highestSeverity, cveCount, evidenceCount, baseScore);
-                await ExecuteNonQueryCommand(command);
+
+                var Id = Guid.NewGuid();
+                using (SqlCommand command = new SqlCommand("INSERT INTO DependencyCheckResults (Id, ScanId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@Id, @ScanId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection))
+                {
+                    command.Parameters.AddWithValue("@Id", Id);
+                    command.Parameters.AddWithValue("@ScanId", scanId);
+                    command.Parameters.AddWithValue("@PackageName", packageName);
+                    command.Parameters.AddWithValue("@HighestSeverity", highestSeverity);
+                    command.Parameters.AddWithValue("@CveCount", cveCount);
+                    command.Parameters.AddWithValue("@EvidenceCount", evidenceCount);
+                    command.Parameters.AddWithValue("@Basescore", baseScore);
+
+                    await ExecuteNonQueryCommand(command);
+                }
             }
         }
         catch (Exception ex)
@@ -38,100 +61,60 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
         }
     }
 
-    public async Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectId, string userId)
+    public async Task InsertDependencyInfosIntoDatabase(Guid scanId, List<DependencyCheckResults> dependencyCheckResults)
     {
-        if (!await DoesProjectExist(userId, projectId))
+        // Check if the list is empty
+        if (dependencyCheckResults == null || !dependencyCheckResults.Any())
         {
-            _logger.LogInformation("Project does not exist.");
-            return null;
+            // Insert an empty record
+            await InsertIntoDependencyCheckResults(scanId, null, null, null, null, null);
         }
-
-        try
+        else
         {
-            return await FetchResultsFromDatabase(projectId);
-        }
-        catch (Exception ex)
-        {
-            HandleError(ex, "An error occurred while retrieving results.");
-            throw;
-        }
-    }
-
-    public async Task<bool> CheckAndInsertIfNotExistsInProjects(string userId, string projectId)
-    {
-        try
-        {
-            string projectType = "Dependency Check";
-            string dateTime = GetFormattedDateTime();
-
-            using (SqlConnection connection = new SqlConnection(_DBconnectionString))
+            foreach (DependencyCheckResults result in dependencyCheckResults)
             {
-                await connection.OpenAsync();
-                SqlCommand command = CreateCheckAndInsertCommand(connection, userId, projectId, projectType, dateTime);
-                int rowsAffected = await command.ExecuteNonQueryAsync();
-                await connection.CloseAsync();
-                return rowsAffected > 0;
+                await InsertIntoDependencyCheckResults(scanId, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
             }
         }
-        catch (Exception ex)
+    }
+
+
+    public async Task<Guid> CreateScan(string projectName, Guid createdBy)
+    {
+        var id = Guid.NewGuid(); // Create a new unique GUID
+        var createdAt = DateTimeOffset.Now;
+        const string query = @"INSERT INTO scan (Id, ProjectName, CreatedAt, CreatedBy) VALUES (@Id, @ProjectName, @CreatedAt, @CreatedBy);";
+
+        var parameters = new
         {
-            HandleError(ex, "An error occurred while checking and inserting project.");
-            throw;
+            Id = id,
+            ProjectName = projectName,
+            CreatedAt = createdAt,
+            CreatedBy = createdBy
+        };
+
+        using (var connection = CreateConnection())
+        {
+            var affectedRows = await connection.ExecuteAsync(query, parameters);
+            return id;
         }
     }
 
-    private SqlCommand CreateInsertCommand(SqlConnection connection, string projectId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
-    {
-        var Id = Guid.NewGuid();
-        SqlCommand command = new SqlCommand("INSERT INTO DependencyCheckResults (Id, ProjectId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@Id, @ProjectId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection);
-        command.Parameters.AddWithValue("@Id", Id);
-        command.Parameters.AddWithValue("@ProjectId", projectId);
-        command.Parameters.AddWithValue("@PackageName", packageName);
-        command.Parameters.AddWithValue("@HighestSeverity", highestSeverity);
-        command.Parameters.AddWithValue("@CveCount", cveCount);
-        command.Parameters.AddWithValue("@EvidenceCount", evidenceCount);
-        command.Parameters.AddWithValue("@Basescore", baseScore);
-        return command;
-    }
-
-    private string GetFormattedDateTime()
-    {
-        return DateTime.Now.ToString();
-    }
-
-    private async Task<bool> DoesProjectExist(string userId, string projectId)
-    {
-        try
-        {
-            using (SqlConnection connection = new SqlConnection(_DBconnectionString))
-            {
-                await connection.OpenAsync();
-                using (SqlCommand command = new SqlCommand("SELECT COUNT(*) FROM Projects WHERE UserId = @UserId AND Id = @Id", connection))
-                {
-                    command.Parameters.AddWithValue("@UserId", userId);
-                    command.Parameters.AddWithValue("@Id", projectId);
-                    int count = Convert.ToInt32(await command.ExecuteScalarAsync());
-                    await connection.CloseAsync();
-                    return count > 0;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            HandleError(ex, "No existing project for user:" + userId + " with project:" + projectId);
-            throw;
-        }
-    }
-
-    private async Task<IEnumerable<DependencyCheckResults>> FetchResultsFromDatabase(string projectId)
+    public async Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectName)
     {
         List<DependencyCheckResults> resultList = new List<DependencyCheckResults>();
         using (SqlConnection connection = new SqlConnection(_DBconnectionString))
         {
             await connection.OpenAsync();
-            using (SqlCommand command = new SqlCommand("SELECT * FROM DependencyCheckResults WHERE ProjectId = @ProjectId", connection))
+            string query = @"
+            SELECT dcr.* 
+            FROM DependencyCheckResults dcr
+            INNER JOIN scan s ON dcr.Scanid = s.id
+            WHERE s.ProjectName = @ProjectName";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
             {
-                command.Parameters.AddWithValue("@ProjectId", projectId);
+                command.Parameters.AddWithValue("@ProjectName", projectName);
 
                 using (SqlDataReader reader = await command.ExecuteReaderAsync())
                 {
@@ -140,12 +123,13 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
                         DependencyCheckResults results = new DependencyCheckResults
                         {
                             Id = (Guid)reader["Id"],
-                            ProjectId = reader["ProjectId"] as string,
+                            ScanId = reader.IsDBNull(reader.GetOrdinal("Scanid")) ? (Guid?)null : (Guid)reader["Scanid"],
                             PackageName = reader["PackageName"] as string,
                             HighestSeverity = reader["HighestSeverity"] as string,
-                            CveCount = (int)reader["CveCount"],
-                            EvidenceCount = (int)reader["EvidenceCount"],
-                            BaseScore = (double)reader["BaseScore"]
+                            CveCount = reader.IsDBNull(reader.GetOrdinal("CveCount")) ? (int?)null : (int)reader["CveCount"],
+                            EvidenceCount = reader.IsDBNull(reader.GetOrdinal("EvidenceCount")) ? (int?)null : (int)reader["EvidenceCount"],
+                            BaseScore = (float)(reader.IsDBNull(reader.GetOrdinal("BaseScore")) ? (double?)null : (double)reader["BaseScore"])
+
                         };
                         resultList.Add(results);
                     }
@@ -153,16 +137,6 @@ public class SQLResultsStorageRepository : ISQLResultsStorageRepository
             }
         }
         return resultList;
-    }
-
-    private SqlCommand CreateCheckAndInsertCommand(SqlConnection connection, string userId, string projectId, string projectType, string dateTime)
-    {
-        SqlCommand command = new SqlCommand("IF NOT EXISTS (SELECT 1 FROM Projects WHERE UserId = @UserId AND Id = @Id) BEGIN INSERT INTO Projects (UserId, Id, ProjectType, CreationDate) VALUES (@UserId, @Id, @ProjectType, @CreationDate) END", connection);
-        command.Parameters.AddWithValue("@UserId", userId);
-        command.Parameters.AddWithValue("@Id", projectId);
-        command.Parameters.AddWithValue("@ProjectType", projectType);
-        command.Parameters.AddWithValue("@CreationDate", dateTime);
-        return command;
     }
 
     private async Task ExecuteNonQueryCommand(SqlCommand command)

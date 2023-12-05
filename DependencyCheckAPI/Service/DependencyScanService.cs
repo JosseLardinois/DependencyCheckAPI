@@ -35,8 +35,8 @@ namespace DependencyCheckAPI.Service
             {
                 string projectPath = foldername;
                 string outputPath = projectPath;
-                //string dependencyCheckPath = "/app/dependency-check/dependency-check/bin/dependency-check.sh";
-                string dependencyCheckPath = "C:\\Users\\jlardinois\\Downloads\\dependency-check-8.4.0-release\\dependency-check\\bin\\dependency-check.bat";
+                string dependencyCheckPath = "/app/dependency-check/dependency-check/bin/dependency-check.sh";
+               // string dependencyCheckPath = "C:\\Users\\jlardinois\\Downloads\\dependency-check-8.4.0-release\\dependency-check\\bin\\dependency-check.bat";
 
                 if (Directory.Exists(projectPath))
                 {

@@ -25,7 +25,6 @@ namespace DependencyCheckAPI.Service
 
 
             List<DependencyCheckResults> dependencyCheckResults = ExtractDependencyInfos(dependenciesArray);
-            _sqlResultsStorageRepository.InsertDependencyInfosIntoDatabase(scanId, dependencyCheckResults);
             return dependencyCheckResults;
         }
 

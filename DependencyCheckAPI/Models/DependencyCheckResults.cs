@@ -9,5 +9,6 @@
         public int? CveCount { get; set; }
         public int? EvidenceCount { get; set; }
         public double? BaseScore { get; set; }
+
     }
 }

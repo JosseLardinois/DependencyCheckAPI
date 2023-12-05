@@ -22,7 +22,7 @@ namespace DependencyCheckAPI.Controllers
         [HttpGet("GetResults")]
         public async Task<IActionResult> GetResults(string projectName)
         {
-            return Ok(await _resultsService.GetResults(projectName));
+           // return Ok(await _resultsService.GetResults(projectName));
             try
             {
                 List<DependencyCheckResultsDTO> result = await _resultsService.GetResults(projectName);

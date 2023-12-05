@@ -5,155 +5,159 @@ using Microsoft.AspNetCore.Http;
 using System.Data;
 using System.Data.SqlClient;
 
-public class SQLResultsStorageRepository : ISQLResultsStorageRepository
+namespace DependencyCheckAPI.DAL
 {
-    private string _DBconnectionString;
-    private readonly ILogger<SQLResultsStorageRepository> _logger;
-
-    public SQLResultsStorageRepository(IConfiguration configuration, ILogger<SQLResultsStorageRepository> logger)
+    public class SQLResultsStorageRepository : ISQLResultsStorageRepository
     {
-        _DBconnectionString = Environment.GetEnvironmentVariable("DCDBCS");
-        _logger = logger;
-    }
+        private string _DBconnectionString;
+        private readonly ILogger<SQLResultsStorageRepository> _logger;
 
-
-
-    private IDbConnection CreateConnection()
-    {
-        return new SqlConnection(_DBconnectionString);
-    }
-
-    public async Task InsertIntoDependencyCheckResults(Guid scanId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
-    {
-        try
+        public SQLResultsStorageRepository(IConfiguration configuration, ILogger<SQLResultsStorageRepository> logger)
         {
-            packageName = packageName ?? string.Empty;
-            highestSeverity = highestSeverity ?? string.Empty;
+            _DBconnectionString = Environment.GetEnvironmentVariable("DCDBCS");
+            _logger = logger;
+        }
 
-            // For nullable integers and doubles
-            cveCount = cveCount ?? 0;
-            evidenceCount = evidenceCount ?? 0;
-            baseScore = baseScore ?? 0.0;
 
-            using (SqlConnection connection = new SqlConnection(_DBconnectionString))
+
+        private IDbConnection CreateConnection()
+        {
+            return new SqlConnection(_DBconnectionString);
+        }
+
+        public async Task InsertIntoDependencyCheckResults(Guid scanId, string packageName, string highestSeverity, int? cveCount, int? evidenceCount, double? baseScore)
+        {
+            try
             {
-                await connection.OpenAsync();
+                packageName = packageName ?? string.Empty;
+                highestSeverity = highestSeverity ?? string.Empty;
 
-                var Id = Guid.NewGuid();
-                using (SqlCommand command = new SqlCommand("INSERT INTO DependencyCheckResults (Id, ScanId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@Id, @ScanId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection))
+                // For nullable integers and doubles
+                cveCount = cveCount ?? 0;
+                evidenceCount = evidenceCount ?? 0;
+                baseScore = baseScore ?? 0.0;
+
+                using (SqlConnection connection = new SqlConnection(_DBconnectionString))
                 {
-                    command.Parameters.AddWithValue("@Id", Id);
-                    command.Parameters.AddWithValue("@ScanId", scanId);
-                    command.Parameters.AddWithValue("@PackageName", packageName);
-                    command.Parameters.AddWithValue("@HighestSeverity", highestSeverity);
-                    command.Parameters.AddWithValue("@CveCount", cveCount);
-                    command.Parameters.AddWithValue("@EvidenceCount", evidenceCount);
-                    command.Parameters.AddWithValue("@Basescore", baseScore);
+                    await connection.OpenAsync();
 
-                    await ExecuteNonQueryCommand(command);
+                    var Id = Guid.NewGuid();
+                    using (SqlCommand command = new SqlCommand("INSERT INTO DependencyCheckResults (Id, ScanId, PackageName, HighestSeverity, CveCount, EvidenceCount, Basescore) VALUES (@Id, @ScanId, @PackageName, @HighestSeverity, @CveCount, @EvidenceCount, @Basescore)", connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", Id);
+                        command.Parameters.AddWithValue("@ScanId", scanId);
+                        command.Parameters.AddWithValue("@PackageName", packageName);
+                        command.Parameters.AddWithValue("@HighestSeverity", highestSeverity);
+                        command.Parameters.AddWithValue("@CveCount", cveCount);
+                        command.Parameters.AddWithValue("@EvidenceCount", evidenceCount);
+                        command.Parameters.AddWithValue("@Basescore", baseScore);
+
+
+                        await ExecuteNonQueryCommand(command);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleError(ex, "An error occurred while inserting into DependencyCheck_Results.");
+                throw;
+            }
+        }
+
+        public async Task InsertDependencyInfosIntoDatabase(Guid scanId, List<DependencyCheckResults> dependencyCheckResults)
+        {
+            // Check if the list is empty
+            if (dependencyCheckResults == null || !dependencyCheckResults.Any())
+            {
+                // Insert an empty record
+                await InsertIntoDependencyCheckResults(scanId, null, null, null, null, null);
+            }
+            else
+            {
+                foreach (DependencyCheckResults result in dependencyCheckResults)
+                {
+                    await InsertIntoDependencyCheckResults(scanId, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
                 }
             }
         }
-        catch (Exception ex)
-        {
-            HandleError(ex, "An error occurred while inserting into DependencyCheck_Results.");
-            throw;
-        }
-    }
 
-    public async Task InsertDependencyInfosIntoDatabase(Guid scanId, List<DependencyCheckResults> dependencyCheckResults)
-    {
-        // Check if the list is empty
-        if (dependencyCheckResults == null || !dependencyCheckResults.Any())
+
+        public async Task<Guid> CreateScan(string projectName, Guid createdBy)
         {
-            // Insert an empty record
-            await InsertIntoDependencyCheckResults(scanId, null, null, null, null, null);
-        }
-        else
-        {
-            foreach (DependencyCheckResults result in dependencyCheckResults)
+            var id = Guid.NewGuid(); // Create a new unique GUID
+            var createdAt = DateTimeOffset.Now;
+            const string query = @"INSERT INTO scan (Id, ProjectName, CreatedAt, CreatedBy) VALUES (@Id, @ProjectName, @CreatedAt, @CreatedBy);";
+
+            var parameters = new
             {
-                await InsertIntoDependencyCheckResults(scanId, result.PackageName, result.HighestSeverity, result.CveCount, result.EvidenceCount, result.BaseScore);
+                Id = id,
+                ProjectName = projectName,
+                CreatedAt = createdAt,
+                CreatedBy = createdBy
+            };
+
+            using (var connection = CreateConnection())
+            {
+                var affectedRows = await connection.ExecuteAsync(query, parameters);
+                return id;
             }
         }
-    }
 
-
-    public async Task<Guid> CreateScan(string projectName, Guid createdBy)
-    {
-        var id = Guid.NewGuid(); // Create a new unique GUID
-        var createdAt = DateTimeOffset.Now;
-        const string query = @"INSERT INTO scan (Id, ProjectName, CreatedAt, CreatedBy) VALUES (@Id, @ProjectName, @CreatedAt, @CreatedBy);";
-
-        var parameters = new
+        public async Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectName)
         {
-            Id = id,
-            ProjectName = projectName,
-            CreatedAt = createdAt,
-            CreatedBy = createdBy
-        };
-
-        using (var connection = CreateConnection())
-        {
-            var affectedRows = await connection.ExecuteAsync(query, parameters);
-            return id;
-        }
-    }
-
-    public async Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectName)
-    {
-        List<DependencyCheckResults> resultList = new List<DependencyCheckResults>();
-        using (SqlConnection connection = new SqlConnection(_DBconnectionString))
-        {
-            await connection.OpenAsync();
-            string query = @"
+            List<DependencyCheckResults> resultList = new List<DependencyCheckResults>();
+            using (SqlConnection connection = new SqlConnection(_DBconnectionString))
+            {
+                await connection.OpenAsync();
+                string query = @"
             SELECT dcr.* 
             FROM DependencyCheckResults dcr
             INNER JOIN scan s ON dcr.Scanid = s.id
             WHERE s.ProjectName = @ProjectName";
 
-            using (SqlCommand command = new SqlCommand(query, connection))
-            {
-                command.Parameters.AddWithValue("@ProjectName", projectName);
-
-                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                using (SqlCommand command = new SqlCommand(query, connection))
                 {
-                    while (await reader.ReadAsync())
-                    {
-                        DependencyCheckResults results = new DependencyCheckResults
-                        {
-                            Id = (Guid)reader["Id"],
-                            ScanId = reader.IsDBNull(reader.GetOrdinal("Scanid")) ? (Guid?)null : (Guid)reader["Scanid"],
-                            PackageName = reader["PackageName"] as string,
-                            HighestSeverity = reader["HighestSeverity"] as string,
-                            CveCount = reader.IsDBNull(reader.GetOrdinal("CveCount")) ? (int?)null : (int)reader["CveCount"],
-                            EvidenceCount = reader.IsDBNull(reader.GetOrdinal("EvidenceCount")) ? (int?)null : (int)reader["EvidenceCount"],
-                            BaseScore = (float)(reader.IsDBNull(reader.GetOrdinal("BaseScore")) ? (double?)null : (double)reader["BaseScore"])
+                    command.Parameters.AddWithValue("@ProjectName", projectName);
 
-                        };
-                        resultList.Add(results);
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            DependencyCheckResults results = new DependencyCheckResults
+                            {
+                                Id = (Guid)reader["Id"],
+                                ScanId = reader.IsDBNull(reader.GetOrdinal("Scanid")) ? (Guid?)null : (Guid)reader["Scanid"],
+                                PackageName = reader["PackageName"] as string,
+                                HighestSeverity = reader["HighestSeverity"] as string,
+                                CveCount = reader.IsDBNull(reader.GetOrdinal("CveCount")) ? (int?)null : (int)reader["CveCount"],
+                                EvidenceCount = reader.IsDBNull(reader.GetOrdinal("EvidenceCount")) ? (int?)null : (int)reader["EvidenceCount"],
+                                BaseScore = (float)(reader.IsDBNull(reader.GetOrdinal("BaseScore")) ? (double?)null : (double)reader["BaseScore"])
+
+                            };
+                            resultList.Add(results);
+                        }
                     }
                 }
             }
+            return resultList;
         }
-        return resultList;
-    }
 
-    private async Task ExecuteNonQueryCommand(SqlCommand command)
-    {
-        try
+        private async Task ExecuteNonQueryCommand(SqlCommand command)
         {
-            await command.ExecuteNonQueryAsync();
+            try
+            {
+                await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                HandleError(ex, "Error executing SQL command.");
+                throw;
+            }
         }
-        catch (Exception ex)
-        {
-            HandleError(ex, "Error executing SQL command.");
-            throw;
-        }
-    }
 
-    private void HandleError(Exception ex, string errorMessage)
-    {
-        _logger.LogError(ex, errorMessage);
+        private void HandleError(Exception ex, string errorMessage)
+        {
+            _logger.LogError(ex, errorMessage);
+        }
     }
 }

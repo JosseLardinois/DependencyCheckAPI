@@ -2,6 +2,8 @@
 {
     public interface IDependencyScanService
     {
-        Task UnzipFolder(string filename);
+        Task<string> UnzipFolder(string filename);
+
+        Task ExecuteDependencyScan(string foldername, string outputFormat);
     }
 }

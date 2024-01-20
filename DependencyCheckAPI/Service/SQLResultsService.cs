@@ -30,7 +30,6 @@ namespace DependencyCheckAPI.Service
             }
             catch (Exception ex)
             {
-                // Log the exception if necessary
                 throw new Exception("An error occurred while retrieving results.", ex);
             }
         }

@@ -25,7 +25,6 @@ namespace DependencyCheckAPI.Service
             }
             catch (Exception ex)
                 {
-                    // You can also log the error if needed.
                     throw new Exception($"Error extracting zip file '{scanId}': {ex.Message}");
                 }
         }

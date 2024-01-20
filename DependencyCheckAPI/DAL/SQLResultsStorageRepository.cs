@@ -66,10 +66,8 @@ namespace DependencyCheckAPI.DAL
 
         public async Task InsertDependencyInfosIntoDatabase(Guid scanId, List<DependencyCheckResults> dependencyCheckResults)
         {
-            // Check if the list is empty
             if (dependencyCheckResults == null || !dependencyCheckResults.Any())
             {
-                // Insert an empty record
                 await InsertIntoDependencyCheckResults(scanId, null, null, null, null, null);
             }
             else
@@ -84,7 +82,7 @@ namespace DependencyCheckAPI.DAL
 
         public async Task<Guid> CreateScan(string projectName, Guid createdBy)
         {
-            var id = Guid.NewGuid(); // Create a new unique GUID
+            var id = Guid.NewGuid();
             var createdAt = DateTimeOffset.Now;
             const string query = @"INSERT INTO scan (Id, ProjectName, CreatedAt, CreatedBy) VALUES (@Id, @ProjectName, @CreatedAt, @CreatedBy);";
 
@@ -105,7 +103,21 @@ namespace DependencyCheckAPI.DAL
 
         public async Task<IEnumerable<DependencyCheckResults>> RetrieveDependencyCheckResults(string projectName)
         {
-            List<DependencyCheckResults> resultList = new List<DependencyCheckResults>();
+            try
+            {
+                return await RetrieveResultsFromDatabase(projectName);
+            }
+            catch (Exception ex)
+            {
+                HandleError(ex, "An error occurred while retrieving DependencyCheck_Results.");
+                throw;
+            }
+        }
+
+        private async Task<IEnumerable<DependencyCheckResults>> RetrieveResultsFromDatabase(string projectName)
+        {
+            var resultList = new List<DependencyCheckResults>();
+
             using (SqlConnection connection = new SqlConnection(_DBconnectionString))
             {
                 await connection.OpenAsync();
@@ -115,31 +127,35 @@ namespace DependencyCheckAPI.DAL
             INNER JOIN scan s ON dcr.Scanid = s.id
             WHERE s.ProjectName = @ProjectName";
 
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (var command = new SqlCommand(query, connection as SqlConnection))
                 {
                     command.Parameters.AddWithValue("@ProjectName", projectName);
 
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
-                            DependencyCheckResults results = new DependencyCheckResults
-                            {
-                                Id = (Guid)reader["Id"],
-                                ScanId = reader.IsDBNull(reader.GetOrdinal("Scanid")) ? (Guid?)null : (Guid)reader["Scanid"],
-                                PackageName = reader["PackageName"] as string,
-                                HighestSeverity = reader["HighestSeverity"] as string,
-                                CveCount = reader.IsDBNull(reader.GetOrdinal("CveCount")) ? (int?)null : (int)reader["CveCount"],
-                                EvidenceCount = reader.IsDBNull(reader.GetOrdinal("EvidenceCount")) ? (int?)null : (int)reader["EvidenceCount"],
-                                BaseScore = (float)(reader.IsDBNull(reader.GetOrdinal("BaseScore")) ? (double?)null : (double)reader["BaseScore"])
-
-                            };
-                            resultList.Add(results);
+                            resultList.Add(MapReaderToDependencyCheckResults(reader));
                         }
                     }
                 }
             }
+
             return resultList;
+        }
+
+        private DependencyCheckResults MapReaderToDependencyCheckResults(SqlDataReader reader)
+        {
+            return new DependencyCheckResults
+            {
+                Id = (Guid)reader["Id"],
+                ScanId = reader.IsDBNull(reader.GetOrdinal("Scanid")) ? (Guid?)null : (Guid)reader["Scanid"],
+                PackageName = reader["PackageName"] as string,
+                HighestSeverity = reader["HighestSeverity"] as string,
+                CveCount = reader.IsDBNull(reader.GetOrdinal("CveCount")) ? (int?)null : (int)reader["CveCount"],
+                EvidenceCount = reader.IsDBNull(reader.GetOrdinal("EvidenceCount")) ? (int?)null : (int)reader["EvidenceCount"],
+                BaseScore = (float)(reader.IsDBNull(reader.GetOrdinal("BaseScore")) ? (double?)null : (double)reader["BaseScore"])
+            };
         }
 
         private async Task ExecuteNonQueryCommand(SqlCommand command)

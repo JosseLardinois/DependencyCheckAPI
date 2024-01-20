@@ -35,14 +35,10 @@ namespace BackgroundTasks.Worker
         {
             await using var client = new ServiceBusClient(_serviceBusConnectionString);
 
-            // Create a processor to process messages from the topic subscription
             var processor = client.CreateProcessor(_topicName, _subscriptionName, new ServiceBusProcessorOptions());
-
-            // Add handlers to process messages and errors
             processor.ProcessMessageAsync += ProcessMessageAsync;
             processor.ProcessErrorAsync += ProcessErrorAsync;
 
-            // Start processing
             await processor.StartProcessingAsync(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
@@ -51,7 +47,6 @@ namespace BackgroundTasks.Worker
                 Console.WriteLine("Waiting for message...");
             }
 
-            // Stop processing
             await processor.StopProcessingAsync();
         }
 
@@ -59,7 +54,6 @@ namespace BackgroundTasks.Worker
         {
             try
             {
-                // Process the message
                 string messageBody = args.Message.Body.ToString();
                 _logger.LogInformation($"Received message: {messageBody}");
                 if (!IsValidMessage(messageBody,out string projectlanguage, out string scanid, out Guid userid))
@@ -73,26 +67,21 @@ namespace BackgroundTasks.Worker
                 Guid userId = parsedMessage.userid;
                 await DependencyCheck(scanId, userId);
 
-                // Complete the message to remove it from the subscription
                 await args.CompleteMessageAsync(args.Message);
             }
             catch (Exception ex)
             {
-                // Handle any exceptions that occur while processing the message
                 _logger.LogError($"Error occurred while processing the message: {ex.Message}");
 
-                // Abandon the message to let the Service Bus retry processing it
                 await args.AbandonMessageAsync(args.Message);
             }
         }
 
         private Task ProcessErrorAsync(ProcessErrorEventArgs args)
         {
-            // Handle any exceptions that occur during the message handler execution
             _logger.LogError($"Exception occurred while receiving message: {args.Exception.Message}");
             return Task.CompletedTask;
         }
-        //use out string for passing multiple strings
         private bool IsValidMessage(string messageBody,out string projectlanguage, out string scanId, out Guid userId)
         {
             try
@@ -103,7 +92,6 @@ namespace BackgroundTasks.Worker
                 userId = parsedMessage.userid;
                 projectlanguage = parsedMessage.projectlanguage;
 
-                // Validate if filename and userId exist in the parsed message
                 if (string.IsNullOrEmpty(scanId) || userId == Guid.Empty || projectlanguage != "c#")
                 {
                     return false;
@@ -161,8 +149,6 @@ namespace BackgroundTasks.Worker
             }
             catch (Exception ex)
             {
-                // Handle other exceptions here if needed, and send an appropriate response to the client.
-                // You can also log the error if needed.
                 return false;
             }
         }

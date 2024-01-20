@@ -26,7 +26,7 @@ FROM build AS publish
 RUN dotnet publish "DependencyCheckAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
-RUN apt-get update && apt-get install -y openjdk-11-jdk
+RUN apt-get update && apt-get install -y openjdk-17-jdk
 WORKDIR /app
 COPY --from=publish /app/publish .
 COPY --from=build /dependency-check/ /app/dependency-check/
